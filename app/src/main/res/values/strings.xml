@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Helmet Hero</string>
+    <string name="app_tagline">Smart Helmet Safety Monitoring App</string>
+    <string name="app_logo_description">Helmet Hero App Logo</string>
+    <string name="email_hint">Email</string>
+    <string name="password_hint">Password</string>
+    <string name="login_button_text">Log in</string>
+    <string name="forgot_password_text">Forgot password?</string>
+    <string name="signup_text">Sign up</string>
+    <string-array name="roles">
+        <item>Rider</item>
+        <item>Family Member</item>
+    </string-array>
+</resources>

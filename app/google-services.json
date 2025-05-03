@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "878957481305",
+    "firebase_url": "https://helmet-hero-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "helmet-hero",
+    "storage_bucket": "helmet-hero.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878957481305:android:df0ec7c10ffc1e3db01048",
+        "android_client_info": {
+          "package_name": "com.example.helmethero"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPeZPEPM9Tyjjh8ehhRo5JwZRjpKO5lTI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
