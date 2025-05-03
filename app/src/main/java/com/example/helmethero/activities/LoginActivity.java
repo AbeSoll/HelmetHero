@@ -66,12 +66,12 @@ public class LoginActivity extends AppCompatActivity {
                             FirebaseUser user = auth.getCurrentUser();
                             if (user != null) {
                                 String uid = user.getUid();
-                                userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid).child("role");
+                                userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid); // ✅ corrected
 
                                 userRef.get().addOnSuccessListener(snapshot -> {
                                     if (snapshot.exists()) {
-                                        String roleInDB = snapshot.getValue(String.class);
-                                        if (roleInDB.equals(selectedRole)) {
+                                        String roleInDB = snapshot.child("role").getValue(String.class); // ✅ corrected
+                                        if (roleInDB != null && selectedRole.equals(roleInDB)) {
                                             if (roleInDB.equals("Rider")) {
                                                 startActivity(new Intent(LoginActivity.this, RiderHomeActivity.class));
                                             } else {
@@ -91,6 +91,7 @@ public class LoginActivity extends AppCompatActivity {
                             Toast.makeText(LoginActivity.this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
                     });
+
         });
 
         // Redirect to sign up

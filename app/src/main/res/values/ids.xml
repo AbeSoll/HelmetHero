@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tripDate" type="id" />
+    <item name="tripDuration" type="id" />
+    <item name="tripDistance" type="id" />
+    <item name="tripNotes" type="id" />
+</resources>

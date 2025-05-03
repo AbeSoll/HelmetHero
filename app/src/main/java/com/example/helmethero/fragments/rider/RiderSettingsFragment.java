@@ -1,4 +1,4 @@
 package com.example.helmethero.fragments.rider;
 
-public class RiderSettingsFragment {
+public class RiderSettingsFragment extends RiderStartTripFragment {
 }

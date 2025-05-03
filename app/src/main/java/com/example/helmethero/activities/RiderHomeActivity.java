@@ -1,64 +1,100 @@
 package com.example.helmethero.activities;
 
 import android.os.Bundle;
+import android.view.MenuItem;
+import android.view.View;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.example.helmethero.R;
-import com.example.helmethero.fragments.rider.RiderStartTripFragment;
-import com.example.helmethero.fragments.rider.RiderTripFragment;
-import com.example.helmethero.fragments.rider.RiderHistoryFragment;
 import com.example.helmethero.fragments.rider.RiderEmergencyContactFragment;
+import com.example.helmethero.fragments.rider.RiderHelmetFragment;
+import com.example.helmethero.fragments.rider.RiderHistoryFragment;
 import com.example.helmethero.fragments.rider.RiderSettingsFragment;
+import com.example.helmethero.fragments.rider.RiderStartTripFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
+
+import java.util.Objects;
 
 public class RiderHomeActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNav;
+
+    // Fragment tags (optional)
+    private static final String TAG_START_TRIP = "RiderStartTripFragment";
+    private static final String TAG_HELMET = "RiderHelmetFragment";
+    private static final String TAG_HISTORY = "RiderHistoryFragment";
+    private static final String TAG_CONTACTS = "RiderEmergencyContactFragment";
+    private static final String TAG_SETTINGS = "RiderSettingsFragment";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rider_home);
 
+        // Setup Toolbar as ActionBar
+        Toolbar toolbar = findViewById(R.id.top_toolbar);
+        setSupportActionBar(toolbar);
+        Objects.requireNonNull(getSupportActionBar()).setTitle("Helmet Hero");
+
+        // Initialize Bottom Navigation
         bottomNav = findViewById(R.id.bottom_navigation);
 
-        bottomNav.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
+        bottomNav.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                Fragment selectedFragment = null;
+                String tag = null;
 
-            switch (item.getItemId()) {
-                case R.id.nav_home:
+                int itemId = item.getItemId();
+
+                if (itemId == R.id.nav_home) {
                     selectedFragment = new RiderStartTripFragment();
-                    break;
-                case R.id.nav_trip:
-                    selectedFragment = new RiderTripFragment();
-                    break;
-                case R.id.nav_history:
+                    tag = TAG_START_TRIP;
+                } else if (itemId == R.id.nav_trip) {
+                    selectedFragment = new RiderHelmetFragment();
+                    tag = TAG_HELMET;
+                } else if (itemId == R.id.nav_history) {
                     selectedFragment = new RiderHistoryFragment();
-                    break;
-                case R.id.nav_contacts:
+                    tag = TAG_HISTORY;
+                } else if (itemId == R.id.nav_contacts) {
                     selectedFragment = new RiderEmergencyContactFragment();
-                    break;
-                case R.id.nav_settings:
+                    tag = TAG_CONTACTS;
+                } else if (itemId == R.id.nav_settings) {
                     selectedFragment = new RiderSettingsFragment();
-                    break;
-            }
+                    tag = TAG_SETTINGS;
+                } else {
+                    return false; // Handle unknown item
+                }
 
-            if (selectedFragment != null) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment)
-                        .commit();
-                return true;
-            }
+                if (selectedFragment != null) {
+                    FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+                    transaction.setReorderingAllowed(true);
+                    transaction.replace(R.id.fragment_container, selectedFragment, tag);
+                    transaction.commit();
+                    return true;
+                }
 
-            return false;
+                return false;
+            }
         });
 
-        // Set default fragment on first load
+        // Load default fragment
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new RiderStartTripFragment())
+                    .setReorderingAllowed(true)
+                    .replace(R.id.fragment_container, new RiderStartTripFragment(), TAG_START_TRIP)
                     .commit();
+        }
+    }
+    public void setBottomNavVisibility(boolean show) {
+        if (bottomNav != null) {
+            bottomNav.setVisibility(show ? View.VISIBLE : View.GONE);
         }
     }
 }

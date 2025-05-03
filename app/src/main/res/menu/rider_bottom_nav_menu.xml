@@ -1,29 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-
     <item
         android:id="@+id/nav_home"
         android:icon="@drawable/ic_home"
         android:title="Home" />
-
     <item
         android:id="@+id/nav_trip"
-        android:icon="@drawable/ic_trip"
-        android:title="Trip" />
-
+        android:icon="@drawable/ic_helmet"
+        android:title="Helmet" />
     <item
         android:id="@+id/nav_history"
         android:icon="@drawable/ic_history"
         android:title="History" />
-
     <item
         android:id="@+id/nav_contacts"
         android:icon="@drawable/ic_contacts"
         android:title="Contacts" />
-
     <item
         android:id="@+id/nav_settings"
         android:icon="@drawable/ic_settings"
         android:title="Settings" />
-
 </menu>

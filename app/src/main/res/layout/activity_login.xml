@@ -2,8 +2,8 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/splash_background"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="@drawable/splash_background">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,49 +12,46 @@
         android:padding="24dp"
         android:gravity="center_horizontal">
 
+        <!-- Logo -->
         <ImageView
             android:layout_width="150dp"
             android:layout_height="150dp"
             android:src="@drawable/ic_helmethero_logo"
             android:contentDescription="App Logo"
-            android:layout_marginTop="48dp"/>
+            android:layout_marginTop="40dp" />
 
+        <!-- App Title -->
         <TextView
-            android:id="@+id/appTitle"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:text="HelmetHero"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
             android:fontFamily="@font/poppins_medium"
-            android:gravity="center"
-            android:text="Helmet Hero"
-            android:textColor="@android:color/white"
-            android:textSize="30sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="16dp" />
 
+        <!-- Tagline -->
         <TextView
-            android:id="@+id/appTagline"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:fontFamily="@font/poppins"
-            android:gravity="center"
             android:text="Smart Helmet Safety Monitoring App"
+            android:textSize="14sp"
             android:textColor="@android:color/white"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/poppins"
+            android:layout_marginBottom="24dp" />
 
+        <!-- Login Form -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@android:color/white"
             android:orientation="vertical"
+            android:background="@android:color/white"
             android:padding="24dp"
-            android:elevation="4dp"
-            android:layout_marginBottom="32dp"
-            android:layout_marginTop="8dp"
+            android:elevation="6dp"
             android:layout_marginHorizontal="12dp"
-            android:backgroundTint="@android:color/white"
-            android:clipToPadding="false"
-            android:radius="12dp">
+            android:layout_marginBottom="32dp"
+            android:backgroundTint="@android:color/white">
 
             <EditText
                 android:id="@+id/emailInput"
@@ -63,7 +60,9 @@
                 android:hint="Email"
                 android:inputType="textEmailAddress"
                 android:fontFamily="@font/poppins"
-                android:layout_marginBottom="16dp"/>
+                android:padding="12dp"
+                android:background="@drawable/edittext_background"
+                android:layout_marginBottom="16dp" />
 
             <EditText
                 android:id="@+id/passwordInput"
@@ -72,13 +71,15 @@
                 android:hint="Password"
                 android:inputType="textPassword"
                 android:fontFamily="@font/poppins"
-                android:layout_marginBottom="16dp"/>
+                android:padding="12dp"
+                android:background="@drawable/edittext_background"
+                android:layout_marginBottom="16dp" />
 
             <Spinner
                 android:id="@+id/roleSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="48dp"/>
+                android:layout_marginBottom="32dp" />
 
             <Button
                 android:id="@+id/loginButton"
@@ -86,11 +87,13 @@
                 android:layout_height="wrap_content"
                 android:text="Log in"
                 android:textColor="@android:color/white"
-                android:backgroundTint="#265bb8"
-                android:fontFamily="@font/poppins"/>
-
+                android:backgroundTint="#265BB8"
+                android:fontFamily="@font/poppins_medium"
+                android:paddingVertical="12dp"
+                android:textSize="16sp" />
         </LinearLayout>
 
+        <!-- Additional Options -->
         <TextView
             android:id="@+id/forgotPassword"
             android:layout_width="wrap_content"
@@ -98,7 +101,7 @@
             android:text="Forgot password?"
             android:textColor="@android:color/white"
             android:textSize="14sp"
-            android:fontFamily="@font/poppins_medium"
+            android:fontFamily="@font/poppins"
             android:layout_marginBottom="8dp" />
 
         <TextView
@@ -110,6 +113,6 @@
             android:textSize="16sp"
             android:textStyle="bold"
             android:fontFamily="@font/poppins_medium"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="32dp" />
     </LinearLayout>
 </ScrollView>

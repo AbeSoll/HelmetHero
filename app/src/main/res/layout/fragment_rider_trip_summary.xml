@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#E5F0FF"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:padding="20dp"
+        android:elevation="3dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginHorizontal="8dp"
+        android:clipToPadding="false"
+        android:gravity="start">
+
+        <!-- 🗺️ Map Preview -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginBottom="20dp">
+
+            <fragment
+                android:id="@+id/summaryMap"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <!-- 📊 Trip Info -->
+        <!-- 🗓️ Trip Date -->
+        <TextView
+            android:id="@+id/textTripDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Date: --"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:layout_marginBottom="8dp" />
+
+
+        <TextView
+            android:id="@+id/textDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Duration: 00:00"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="#000000" />
+
+        <TextView
+            android:id="@+id/textDistance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Distance: 0.00 km"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="#000000" />
+
+        <TextView
+            android:id="@+id/textAvgSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Average Speed: 0.0 km/h"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"
+            android:textColor="#000000" />
+
+        <!-- 📝 Notes -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Notes"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/editNote"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:hint="Add a note about this trip..."
+            android:gravity="top|start"
+            android:background="@android:drawable/editbox_background"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- ✅ Save + ❌ Discard Buttons -->
+        <Button
+            android:id="@+id/btnSaveActivity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:backgroundTint="#265BB8"
+            android:textColor="@android:color/white"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnDiscardActivity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Discard"
+            android:backgroundTint="#B00020"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+</ScrollView>

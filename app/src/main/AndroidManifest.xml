@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 🔐 Permissions must be declared here -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,6 +18,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HelmetHero"
         tools:targetApi="31">
+
+        <!-- ✅ Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBRvzeYlDX3ooANb7PEXeAaofcMMyMIjPQ" />
+
         <activity android:name=".activities.SplashActivity"
             android:exported="true">
             <intent-filter>
@@ -22,6 +34,8 @@
 
         <activity android:name=".activities.LoginActivity" android:exported="false" />
         <activity android:name=".activities.SignupActivity" android:exported="false" />
+        <activity android:name=".activities.RiderHomeActivity" android:exported="false" />
+
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
