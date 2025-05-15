@@ -11,14 +11,16 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
+        // ✅ Add this line:
+        maven(url = "https://jitpack.io")
     }
 }
 
 rootProject.name = "HelmetHero"
 include(":app")
- 

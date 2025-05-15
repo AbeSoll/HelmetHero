@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="#DDE9FF">
+
+    <ImageView
+        android:layout_width="173dp"
+        android:layout_height="173dp"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/ic_helmet_bt" />
+
+    <TextView
+        android:id="@+id/textHelmetStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="❌ Helmet Not Connected"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnConnectHelmet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CONNECT HELMET"
+        android:backgroundTint="#1E2D60"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

@@ -1,9 +1,11 @@
 package com.example.helmethero.activities;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.*;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -28,7 +30,6 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Bind UI elements
         emailInput = findViewById(R.id.emailInput);
         passwordInput = findViewById(R.id.passwordInput);
         roleSpinner = findViewById(R.id.roleSpinner);
@@ -38,7 +39,6 @@ public class LoginActivity extends AppCompatActivity {
 
         auth = FirebaseAuth.getInstance();
 
-        // Spinner setup
         String[] roles = {"Select Role", "Rider", "Family Member"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, roles);
         roleSpinner.setAdapter(adapter);
@@ -50,7 +50,6 @@ public class LoginActivity extends AppCompatActivity {
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         });
 
-        // Login button logic
         loginButton.setOnClickListener(v -> {
             String email = emailInput.getText().toString().trim();
             String password = passwordInput.getText().toString().trim();
@@ -66,12 +65,20 @@ public class LoginActivity extends AppCompatActivity {
                             FirebaseUser user = auth.getCurrentUser();
                             if (user != null) {
                                 String uid = user.getUid();
-                                userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid); // ✅ corrected
+                                userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
 
                                 userRef.get().addOnSuccessListener(snapshot -> {
                                     if (snapshot.exists()) {
-                                        String roleInDB = snapshot.child("role").getValue(String.class); // ✅ corrected
+                                        String roleInDB = snapshot.child("role").getValue(String.class);
                                         if (roleInDB != null && selectedRole.equals(roleInDB)) {
+
+                                            // ✅ Save role to SharedPreferences
+                                            SharedPreferences prefs = getSharedPreferences("HelmetHeroPrefs", MODE_PRIVATE);
+                                            SharedPreferences.Editor editor = prefs.edit();
+                                            editor.putString("role", roleInDB);
+                                            editor.apply();
+
+                                            // Redirect based on role
                                             if (roleInDB.equals("Rider")) {
                                                 startActivity(new Intent(LoginActivity.this, RiderHomeActivity.class));
                                             } else {
@@ -91,15 +98,12 @@ public class LoginActivity extends AppCompatActivity {
                             Toast.makeText(LoginActivity.this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
                     });
-
         });
 
-        // Redirect to sign up
         signupText.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, SignupActivity.class));
         });
 
-        // (Optional) Forgot password
         forgotPassword.setOnClickListener(v -> {
             Toast.makeText(LoginActivity.this, "Reset password function coming soon", Toast.LENGTH_SHORT).show();
         });

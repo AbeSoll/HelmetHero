@@ -28,6 +28,8 @@ import com.google.android.gms.location.*;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
 
+import com.example.helmethero.utils.HelmetConnectionManager;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -39,6 +41,8 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     private LocationCallback locationCallback;
 
     private TextView durationText, distanceText, speedText;
+    private TextView helmetStatusText;
+
     private long startTimeMillis;
     private double totalDistanceKm = 0.0;
     private Location lastLocation;
@@ -74,10 +78,9 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         durationText = view.findViewById(R.id.textDuration);
         distanceText = view.findViewById(R.id.textDistance);
         speedText = view.findViewById(R.id.textCurrentSpeed);
-        TextView helmetStatusText = view.findViewById(R.id.textHelmetStatus);
-        Button endTripButton = view.findViewById(R.id.btnEndTrip);
 
-        helmetStatusText.setText("🟢 Helmet Connected");
+        Button endTripButton = view.findViewById(R.id.btnEndTrip);
+        helmetStatusText = view.findViewById(R.id.textHelmetStatus);
 
         view.post(() -> {
             if (getActivity() instanceof RiderHomeActivity) {
@@ -91,7 +94,6 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
         startTimeMillis = SystemClock.elapsedRealtime();
         durationHandler.post(durationRunnable);
-
 
         endTripButton.setOnClickListener(v -> {
             long duration = SystemClock.elapsedRealtime() - startTimeMillis;
@@ -239,6 +241,19 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (helmetStatusText != null) {
+            if (HelmetConnectionManager.isConnected()) {
+                helmetStatusText.setText("✅ Helmet Connected");
+            } else {
+                helmetStatusText.setText("❌ Helmet Not Connected");
+            }
         }
     }
 }
