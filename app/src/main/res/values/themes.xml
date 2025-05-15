@@ -1,9 +1,22 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
     <style name="Base.Theme.HelmetHero" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/helmet_blue</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">@color/helmet_blue</item>
+
+        <item name="toolbarStyle">@style/ToolbarTheme</item>
+
+        <item name="android:statusBarColor">@color/helmet_blue</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="Theme.HelmetHero" parent="Base.Theme.HelmetHero" />
+
+    <style name="ToolbarTheme" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/helmet_blue</item>
+        <item name="titleTextColor">@android:color/white</item>
+        <item name="android:theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+    </style>
+
 </resources>

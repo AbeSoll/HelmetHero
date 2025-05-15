@@ -1,5 +1,6 @@
 package com.example.helmethero.fragments.rider;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
@@ -43,6 +44,7 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
         return fragment;
     }
 
+    @SuppressLint("SetTextI18n")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -76,12 +78,13 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
             routePoints = (ArrayList<LatLng>) getArguments().getSerializable("routePoints");
         }
 
+        int hours = (int) (tripDurationMillis / 3600000);
         int minutes = (int) (tripDurationMillis / 60000);
         int seconds = (int) ((tripDurationMillis % 60000) / 1000);
         String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
-        textDuration.setText(String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds));
-        textDistance.setText(String.format(Locale.getDefault(), "%.2f km", distanceKm));
-        textAvgSpeed.setText(String.format(Locale.getDefault(), "%.1f km/h", avgSpeed));
+        textDuration.setText("Duration: " + String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds));
+        textDistance.setText("Distance: " + String.format(Locale.getDefault(), "%.2f km", distanceKm));
+        textAvgSpeed.setText("Average Speed: " + String.format(Locale.getDefault(), "%.1f km/h", avgSpeed));
         textTripDate.setText("Date: " + timestamp);
 
         btnSave.setOnClickListener(v -> saveTripData());
@@ -122,8 +125,14 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
         String note = editNote.getText().toString().trim();
         String tripId = ref.push().getKey();
         String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
-        String formattedDuration = String.format(Locale.getDefault(), "%02d:%02d",
-                (tripDurationMillis / 60000), (tripDurationMillis % 60000) / 1000);
+
+        long totalSeconds = tripDurationMillis / 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+
+        String formattedDuration = String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds);
+
         String formattedDistance = String.format(Locale.getDefault(), "%.2f km", distanceKm);
         String formattedSpeed = String.format(Locale.getDefault(), "%.1f km/h", avgSpeed);
 
@@ -131,24 +140,35 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
             Trip trip = new Trip(tripId, timestamp, formattedDuration, formattedDistance, note, "Ended");
             trip.setAvgSpeed(formattedSpeed);
 
+            Map<String, Object> tripData = new HashMap<>();
+            tripData.put("tripId", trip.getTripId());
+            tripData.put("timestamp", trip.getTimestamp());
+            tripData.put("duration", trip.getDuration());
+            tripData.put("distance", trip.getDistance());
+            tripData.put("notes", trip.getNotes());
+            tripData.put("status", trip.getStatus());
+            tripData.put("avgSpeed", trip.getAvgSpeed());
+
+            // Add routePoints as 'path'
             if (routePoints != null) {
-                List<Object> coords = new ArrayList<>();
+                List<Map<String, Double>> coords = new ArrayList<>();
                 for (LatLng point : routePoints) {
                     Map<String, Double> latLngMap = new HashMap<>();
                     latLngMap.put("lat", point.latitude);
                     latLngMap.put("lng", point.longitude);
                     coords.add(latLngMap);
                 }
-                ref.child(tripId).child("path").setValue(coords);
+                tripData.put("path", coords);
             }
 
-            ref.child(tripId).setValue(trip).addOnSuccessListener(task -> {
+            ref.child(tripId).updateChildren(tripData).addOnSuccessListener(task -> {
                 Toast.makeText(getContext(), "✅ Trip saved successfully!", Toast.LENGTH_SHORT).show();
                 redirectToHistory();
             }).addOnFailureListener(e -> {
                 Toast.makeText(getContext(), "❌ Failed to save trip.", Toast.LENGTH_SHORT).show();
             });
         }
+
     }
 
     private void discardTrip() {

@@ -1,8 +1,10 @@
 package com.example.helmethero.activities;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -32,6 +34,7 @@ public class RiderHomeActivity extends AppCompatActivity {
     private static final String TAG_CONTACTS = "RiderEmergencyContactFragment";
     private static final String TAG_SETTINGS = "RiderSettingsFragment";
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,8 +42,11 @@ public class RiderHomeActivity extends AppCompatActivity {
 
         // Setup Toolbar as ActionBar
         Toolbar toolbar = findViewById(R.id.top_toolbar);
-        setSupportActionBar(toolbar);
-        Objects.requireNonNull(getSupportActionBar()).setTitle("Helmet Hero");
+        // ❌ Jangan gunakan setSupportActionBar(toolbar);
+
+        // Optional: Kalau nak guna findViewById untuk ubah title/logo nanti
+        TextView title = toolbar.findViewById(R.id.toolbar_title);
+        title.setText("Helmet Hero"); // kalau nak ubah dinamik
 
         // Initialize Bottom Navigation
         bottomNav = findViewById(R.id.bottom_navigation);

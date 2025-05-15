@@ -149,7 +149,8 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
     private void startLocationUpdates() {
         LocationRequest request = LocationRequest.create();
-        request.setInterval(3000);
+        request.setInterval(1000);             // Update every 1 second
+        request.setFastestInterval(500);       // Accept updates as fast as 0.5 second
         request.setPriority(Priority.PRIORITY_HIGH_ACCURACY);
 
         locationCallback = new LocationCallback() {
@@ -173,6 +174,7 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void updateTrip(Location location) {
         if (lastLocation != null) {
             float distance = lastLocation.distanceTo(location);
@@ -186,10 +188,13 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         drawRoute();
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
 
+        // ✅ Real-time speed update (safe fallback)
         if (location.hasSpeed()) {
-            float speedMps = location.getSpeed(); // speed in meters per second
-            float speedKph = speedMps * 3.6f; // convert to km/h
+            float speedMps = location.getSpeed(); // meters/second
+            float speedKph = speedMps * 3.6f;
             speedText.setText(String.format(Locale.getDefault(), "%.1f km/h", speedKph));
+        } else {
+            speedText.setText("0.0 km/h");
         }
     }
 
@@ -210,9 +215,10 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
     private void updateDurationUI() {
         long elapsedMillis = SystemClock.elapsedRealtime() - startTimeMillis;
-        int minutes = (int) (elapsedMillis / 60000);
+        int hours = (int) (elapsedMillis / 3600000);
+        int minutes = (int) ((elapsedMillis % 3600000) / 60000);
         int seconds = (int) ((elapsedMillis % 60000) / 1000);
-        durationText.setText(String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds));
+        durationText.setText(String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds));
     }
 
     @Override

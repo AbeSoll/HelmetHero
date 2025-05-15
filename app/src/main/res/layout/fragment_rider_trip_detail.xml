@@ -46,7 +46,7 @@
             android:id="@+id/tripDurationValue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Duration: 00:00"
+            android:text="Duration: 00:00:00"
             android:textSize="16sp"
             android:textColor="#000000"
             android:layout_marginBottom="4dp" />

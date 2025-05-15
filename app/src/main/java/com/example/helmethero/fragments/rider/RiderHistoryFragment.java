@@ -23,8 +23,12 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class RiderHistoryFragment extends Fragment {
@@ -32,6 +36,18 @@ public class RiderHistoryFragment extends Fragment {
     private TripHistoryAdapter adapter;
     private List<Trip> tripList;
     private DatabaseReference tripsRef;
+
+    // ✅ Add this comparator just before loadTrips()
+    private final Comparator<Trip> timestampDescendingComparator = (t1, t2) -> {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            Date date1 = sdf.parse(t1.getTimestamp());
+            Date date2 = sdf.parse(t2.getTimestamp());
+            return date2.compareTo(date1); // latest first
+        } catch (Exception e) {
+            return 0;
+        }
+    };
 
     @Nullable
     @Override
@@ -78,6 +94,10 @@ public class RiderHistoryFragment extends Fragment {
                     }
                 });
 
+                adapter.notifyDataSetChanged();
+
+                // ✅ Sort using the comparator
+                tripList.sort(timestampDescendingComparator);
                 adapter.notifyDataSetChanged();
             }
 

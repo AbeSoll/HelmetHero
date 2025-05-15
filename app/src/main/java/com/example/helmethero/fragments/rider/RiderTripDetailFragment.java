@@ -1,5 +1,6 @@
 package com.example.helmethero.fragments.rider;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +27,7 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
     private TextView tripDate, tripDurationValue, tripDistanceValue, tripAvgSpeedValue;
     private GoogleMap map;
 
+    @SuppressLint("SetTextI18n")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -53,9 +55,9 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
             trip = (Trip) getArguments().getSerializable("trip");
             if (trip != null) {
                 tripDate.setText(trip.getTimestamp());
-                tripDurationValue.setText(trip.getDuration());
-                tripDistanceValue.setText(trip.getDistance());
-                tripAvgSpeedValue.setText(trip.getAvgSpeed());
+                tripDurationValue.setText("Duration: " + trip.getDuration());
+                tripDistanceValue.setText("Distance: " + trip.getDistance());
+                tripAvgSpeedValue.setText("Average Speed: " + trip.getAvgSpeed());
                 tripNotes.setText(trip.getNotes());
             }
         }
