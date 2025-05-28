@@ -6,12 +6,12 @@ import android.view.*;
 import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.helmethero.R;
 import com.example.helmethero.activities.RiderHomeActivity;
-import com.example.helmethero.models.Trip;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
 import com.google.firebase.auth.FirebaseAuth;
@@ -24,14 +24,12 @@ import java.util.*;
 public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCallback {
 
     private TextView textDuration, textDistance, textAvgSpeed, textTripDate;
-    private EditText editNote;
     private GoogleMap googleMap;
 
     private long tripDurationMillis;
     private double distanceKm;
     private double avgSpeed;
     private ArrayList<LatLng> routePoints;
-
 
     public static RiderTripSummaryFragment newInstance(long duration, double distance, double speed, ArrayList<LatLng> route) {
         RiderTripSummaryFragment fragment = new RiderTripSummaryFragment();
@@ -60,7 +58,11 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
         textDuration = view.findViewById(R.id.textDuration);
         textDistance = view.findViewById(R.id.textDistance);
         textAvgSpeed = view.findViewById(R.id.textAvgSpeed);
-        editNote = view.findViewById(R.id.editNote);
+        EditText editTripNote = view.findViewById(R.id.editTripNote);
+        RadioGroup moodGroup = view.findViewById(R.id.radioMoodGroup);
+        CheckBox tagTraffic = view.findViewById(R.id.tag_traffic);
+        CheckBox tagWeather = view.findViewById(R.id.tag_weather);
+        CheckBox tagHelmet = view.findViewById(R.id.tag_helmet);
         textTripDate = view.findViewById(R.id.textTripDate);
         Button btnSave = view.findViewById(R.id.btnSaveActivity);
         Button btnDiscard = view.findViewById(R.id.btnDiscardActivity);
@@ -70,7 +72,7 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
             mapFragment.getMapAsync(this);
         }
 
-        // ✅ Retrieve arguments
+        // Retrieve arguments
         if (getArguments() != null) {
             tripDurationMillis = getArguments().getLong("duration");
             distanceKm = getArguments().getDouble("distance");
@@ -88,7 +90,14 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
         textTripDate.setText("Date: " + timestamp);
 
         btnSave.setOnClickListener(v -> saveTripData());
-        btnDiscard.setOnClickListener(v -> discardTrip());
+        btnDiscard.setOnClickListener(v -> {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Discard Trip")
+                    .setMessage("Are you sure you want to discard this trip?")
+                    .setPositiveButton("Yes", (dialog, which) -> discardTrip())
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
 
         return view;
     }
@@ -122,34 +131,64 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
         String uid = user.getUid();
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Trips").child(uid);
 
-        String note = editNote.getText().toString().trim();
+        // Collect trip notes
+        EditText editTripNote = requireView().findViewById(R.id.editTripNote);
+        RadioGroup moodGroup = requireView().findViewById(R.id.radioMoodGroup);
+        CheckBox tagTraffic = requireView().findViewById(R.id.tag_traffic);
+        CheckBox tagWeather = requireView().findViewById(R.id.tag_weather);
+        CheckBox tagHelmet = requireView().findViewById(R.id.tag_helmet);
+
+        String noteText = editTripNote.getText().toString().trim();
+
+        // Get selected emoji mood
+        String selectedMood = "";
+        int selectedId = moodGroup.getCheckedRadioButtonId();
+        if (selectedId != -1) {
+            RadioButton selected = requireView().findViewById(selectedId);
+            selectedMood = selected.getText().toString();
+        }
+
+        // Collect selected tags
+        List<String> selectedTags = new ArrayList<>();
+        if (tagTraffic.isChecked()) selectedTags.add("Heavy Traffic");
+        if (tagWeather.isChecked()) selectedTags.add("Rainy/ Slippery Road");
+        if (tagHelmet.isChecked()) selectedTags.add("Helmet Helped");
+
+        // Timestamp & format data
         String tripId = ref.push().getKey();
         String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+
+        // ====== Tambahan field date ======
+        String tripDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        // ==================================
 
         long totalSeconds = tripDurationMillis / 1000;
         long hours = totalSeconds / 3600;
         long minutes = (totalSeconds % 3600) / 60;
         long seconds = totalSeconds % 60;
-
         String formattedDuration = String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds);
 
         String formattedDistance = String.format(Locale.getDefault(), "%.2f km", distanceKm);
         String formattedSpeed = String.format(Locale.getDefault(), "%.1f km/h", avgSpeed);
 
         if (tripId != null) {
-            Trip trip = new Trip(tripId, timestamp, formattedDuration, formattedDistance, note, "Ended");
-            trip.setAvgSpeed(formattedSpeed);
-
             Map<String, Object> tripData = new HashMap<>();
-            tripData.put("tripId", trip.getTripId());
-            tripData.put("timestamp", trip.getTimestamp());
-            tripData.put("duration", trip.getDuration());
-            tripData.put("distance", trip.getDistance());
-            tripData.put("notes", trip.getNotes());
-            tripData.put("status", trip.getStatus());
-            tripData.put("avgSpeed", trip.getAvgSpeed());
+            tripData.put("tripId", tripId);
+            tripData.put("timestamp", timestamp);
+            tripData.put("date", tripDate); // <-- WAJIB UNTUK FILTER!
+            tripData.put("duration", formattedDuration);
+            tripData.put("distance", formattedDistance);
+            tripData.put("status", "Ended");
+            tripData.put("avgSpeed", formattedSpeed);
 
-            // Add routePoints as 'path'
+            // Structured notes
+            Map<String, Object> structuredNote = new HashMap<>();
+            structuredNote.put("mood", selectedMood);
+            structuredNote.put("tags", selectedTags);
+            structuredNote.put("text", noteText);
+            tripData.put("notes", structuredNote);
+
+            // Save path as 'path'
             if (routePoints != null) {
                 List<Map<String, Double>> coords = new ArrayList<>();
                 for (LatLng point : routePoints) {
@@ -161,14 +200,13 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
                 tripData.put("path", coords);
             }
 
-            ref.child(tripId).updateChildren(tripData).addOnSuccessListener(task -> {
+            ref.child(tripId).setValue(tripData).addOnSuccessListener(task -> {
                 Toast.makeText(getContext(), "✅ Trip saved successfully!", Toast.LENGTH_SHORT).show();
                 redirectToHistory();
             }).addOnFailureListener(e -> {
                 Toast.makeText(getContext(), "❌ Failed to save trip.", Toast.LENGTH_SHORT).show();
             });
         }
-
     }
 
     private void discardTrip() {
@@ -187,8 +225,7 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-
-        // ✅ Show back the bottom nav safely
+        // Show back the bottom nav safely
         if (getActivity() instanceof RiderHomeActivity) {
             ((RiderHomeActivity) getActivity()).setBottomNavVisibility(true);
         }

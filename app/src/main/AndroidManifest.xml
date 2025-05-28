@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 🔐 Permissions must be declared here -->
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -25,11 +25,12 @@
         android:theme="@style/Theme.HelmetHero"
         tools:targetApi="31">
 
-        <!-- ✅ Google Maps API Key -->
+        <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBRvzeYlDX3ooANb7PEXeAaofcMMyMIjPQ" />
 
+        <!-- Activities -->
         <activity android:name=".activities.SplashActivity"
             android:exported="true">
             <intent-filter>
@@ -37,14 +38,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity android:name=".activities.LoginActivity" android:exported="false" />
         <activity android:name=".activities.SignupActivity" android:exported="false" />
         <activity android:name=".activities.RiderHomeActivity" android:exported="false" />
+        <activity
+            android:name=".activities.FamilyHomeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.HelmetHero" />
 
+        <!-- Firebase Messaging Service (for push notifications) -->
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+
+        <!-- Preloaded fonts meta -->
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
-    </application>
 
+    </application>
 </manifest>

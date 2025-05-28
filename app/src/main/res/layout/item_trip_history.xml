@@ -24,7 +24,7 @@
                 android:text="April 10, 2024"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#000" />
+                android:textColor="#000"/>
 
             <TextView
                 android:id="@+id/textTripStatus"
@@ -33,7 +33,7 @@
                 android:layout_alignParentEnd="true"
                 android:text="Completed"
                 android:textStyle="bold"
-                android:textColor="#4CAF50" />
+                android:textColor="#4CAF50"/>
         </RelativeLayout>
 
         <TextView
@@ -42,7 +42,7 @@
             android:layout_height="wrap_content"
             android:text="Duration • 35 min"
             android:textSize="14sp"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"/>
 
         <TextView
             android:id="@+id/textTripDistance"
@@ -50,7 +50,7 @@
             android:layout_height="wrap_content"
             android:text="Distance • 17.8 km"
             android:textSize="14sp"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="2dp"/>
 
         <TextView
             android:id="@+id/textTripAvgSpeed"
@@ -58,7 +58,8 @@
             android:layout_height="wrap_content"
             android:text="Avg Speed • 30.5 km/h"
             android:textSize="14sp"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="2dp"/>
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

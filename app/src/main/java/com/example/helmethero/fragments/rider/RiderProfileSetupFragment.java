@@ -64,16 +64,29 @@ public class RiderProfileSetupFragment extends Fragment {
             loadUserProfile();
         }
 
-        // Setup image picker
+        // 1. Setup image picker
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         selectedImageUri = result.getData().getData();
-                        profileImageView.setImageURI(selectedImageUri);
+
+                        if (selectedImageUri != null) {
+                            Glide.with(requireContext())
+                                    .load(selectedImageUri)
+                                    .placeholder(R.drawable.ic_profile) // fallback
+                                    .error(R.drawable.ic_profile)       // error fallback
+                                    .circleCrop()
+                                    .into(profileImageView);
+                        } else {
+                            Toast.makeText(getContext(), "❌ Failed to load image", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "⚠️ Image selection cancelled", Toast.LENGTH_SHORT).show();
                     }
                 });
 
+        // 2. Click listeners
         profileImageView.setOnClickListener(v -> openGallery());
         btnSave.setOnClickListener(v -> saveUserProfile());
         btnCancel.setOnClickListener(v -> requireActivity().onBackPressed());
@@ -99,7 +112,10 @@ public class RiderProfileSetupFragment extends Fragment {
 
                     String imageUrl = snapshot.child("profileImageUrl").getValue(String.class);
                     if (imageUrl != null && !imageUrl.isEmpty()) {
-                        Glide.with(requireContext()).load(imageUrl).into(profileImageView);
+                        Glide.with(requireContext())
+                                .load(imageUrl)
+                                .circleCrop()
+                                .into(profileImageView); // ✅ circular!
                     }
                 }
             }

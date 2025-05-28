@@ -4,4 +4,30 @@
     <item name="tripDuration" type="id" />
     <item name="tripDistance" type="id" />
     <item name="tripNotes" type="id" />
+    <item name="nav_family_home" type="id" />
+    <item name="alertStatusText" type="id" />
+    <item name="alertRiderName" type="id" />
+    <item name="alertLocation" type="id" />
+    <item name="textLinkedRiderStatus" type="id" />
+    <item name="textSOSStatus" type="id" />
+    <item name="btnViewDetails" type="id" />
+    <item name="textAlertTime" type="id" />
+    <item name="textAlertType" type="id" />
+    <item name="textAlertLocation" type="id" />
+    <item name="textAlertStatus" type="id" />
+    <item name="recyclerAlerts" type="id" />
+    <item name="textNoAlerts" type="id" />
+    <item name="liveAlertCard" type="id" />
+    <item name="textLiveAlertType" type="id" />
+    <item name="textLiveAlertTime" type="id" />
+    <item name="textLiveAlertLocation" type="id" />
+    <item name="textRiderName" type="id" />
+    <item name="textRiderPhone" type="id" />
+    <item name="textRiderEmail" type="id" />
+    <item name="recyclerFamilyHistory" type="id" />
+    <item name="textLiveStatus" type="id" />
+    <item name="textLiveSpeed" type="id" />
+    <item name="textLiveLocation" type="id" />
+    <item name="riderInfoCard" type="id" />
+    <item name="btnNavigate" type="id" />
 </resources>

@@ -7,6 +7,7 @@ import android.view.*;
 import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -17,7 +18,7 @@ import static android.content.Context.MODE_PRIVATE;
 
 public class RiderSettingsFragment extends Fragment {
 
-    private LinearLayout btnLanguage, btnAccountInfo, btnLogout;
+    private LinearLayout btnAccountInfo, btnLogout;
 
     @Nullable
     @Override
@@ -25,16 +26,9 @@ public class RiderSettingsFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rider_settings, container, false);
 
-        btnLanguage = view.findViewById(R.id.btnLanguage);
         btnAccountInfo = view.findViewById(R.id.btnAccountInfo);
         btnLogout = view.findViewById(R.id.btnLogout);
 
-        // Language Button (Future Implementation)
-        btnLanguage.setOnClickListener(v -> {
-            // TODO: Implement language selection
-        });
-
-        // Navigate to RiderProfileSetupFragment for account editing
         btnAccountInfo.setOnClickListener(v -> {
             FragmentTransaction ft = requireActivity().getSupportFragmentManager().beginTransaction();
             ft.replace(R.id.fragment_container, new RiderProfileSetupFragment());
@@ -42,16 +36,20 @@ public class RiderSettingsFragment extends Fragment {
             ft.commit();
         });
 
-        // ✅ Logout Button Logic
         btnLogout.setOnClickListener(v -> {
-            // Clear saved login session
-            SharedPreferences preferences = requireActivity().getSharedPreferences("HelmetHeroPrefs", MODE_PRIVATE);
-            preferences.edit().clear().apply();
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Logout")
+                    .setMessage("Are you sure you want to logout?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        SharedPreferences preferences = requireActivity().getSharedPreferences("HelmetHeroPrefs", MODE_PRIVATE);
+                        preferences.edit().clear().apply();
 
-            // Go to LoginActivity and clear back stack
-            Intent intent = new Intent(getActivity(), LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+                        Intent intent = new Intent(getActivity(), LoginActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         });
 
         return view;

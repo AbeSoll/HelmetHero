@@ -2,12 +2,11 @@ package com.example.helmethero.fragments.rider;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -23,9 +22,20 @@ import java.util.*;
 public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallback {
 
     private Trip trip;
-    private EditText tripNotes;
+    private EditText editTripNote;
     private TextView tripDate, tripDurationValue, tripDistanceValue, tripAvgSpeedValue;
     private GoogleMap map;
+    private RadioGroup radioMoodGroup;
+    private CheckBox tagTraffic, tagWeather, tagHelmet;
+
+    // Factory method to create fragment with trip data
+    public static RiderTripDetailFragment newInstance(Trip trip) {
+        RiderTripDetailFragment fragment = new RiderTripDetailFragment();
+        Bundle args = new Bundle();
+        args.putSerializable("trip", trip);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     @SuppressLint("SetTextI18n")
     @Nullable
@@ -39,18 +49,26 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
         tripDurationValue = view.findViewById(R.id.tripDurationValue);
         tripDistanceValue = view.findViewById(R.id.tripDistanceValue);
         tripAvgSpeedValue = view.findViewById(R.id.tripAvgSpeedValue);
-        tripNotes = view.findViewById(R.id.tripNotes);
+
+        editTripNote = view.findViewById(R.id.editTripNote);
+        radioMoodGroup = view.findViewById(R.id.radioMoodGroup);
+        tagTraffic = view.findViewById(R.id.tag_traffic);
+        tagWeather = view.findViewById(R.id.tag_weather);
+        tagHelmet = view.findViewById(R.id.tag_helmet);
+
         Button btnSaveNote = view.findViewById(R.id.btnSaveNote);
         Button btnDeleteTrip = view.findViewById(R.id.btnDeleteTrip);
+        ImageView btnBack = view.findViewById(R.id.btnBack);
 
-        // Map initialization
+        // Handle back button
+        btnBack.setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
+
+        // Map init
         SupportMapFragment mapFragment = (SupportMapFragment)
                 getChildFragmentManager().findFragmentById(R.id.routeMap);
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(this);
-        }
+        if (mapFragment != null) mapFragment.getMapAsync(this);
 
-        // Get trip object from arguments
+        // Get trip data
         if (getArguments() != null && getArguments().containsKey("trip")) {
             trip = (Trip) getArguments().getSerializable("trip");
             if (trip != null) {
@@ -58,40 +76,104 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                 tripDurationValue.setText("Duration: " + trip.getDuration());
                 tripDistanceValue.setText("Distance: " + trip.getDistance());
                 tripAvgSpeedValue.setText("Average Speed: " + trip.getAvgSpeed());
-                tripNotes.setText(trip.getNotes());
+
+                DatabaseReference tripRef = FirebaseDatabase.getInstance()
+                        .getReference("Trips")
+                        .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                        .child(trip.getTripId());
+
+                tripRef.child("notes").addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            // Mood
+                            String mood = snapshot.child("mood").getValue(String.class);
+                            if (mood != null) {
+                                switch (mood) {
+                                    case "😄": radioMoodGroup.check(R.id.mood_happy); break;
+                                    case "😌": radioMoodGroup.check(R.id.mood_calm); break;
+                                    case "😰": radioMoodGroup.check(R.id.mood_stressed); break;
+                                    case "⚠️": radioMoodGroup.check(R.id.mood_alert); break;
+                                }
+                            }
+                            // Tags
+                            for (DataSnapshot tagSnap : snapshot.child("tags").getChildren()) {
+                                String tag = tagSnap.getValue(String.class);
+                                if (tag != null) {
+                                    if (tag.equals("Heavy Traffic")) tagTraffic.setChecked(true);
+                                    if (tag.equals("Rainy/ Slippery Road")) tagWeather.setChecked(true);
+                                    if (tag.equals("Helmet Helped")) tagHelmet.setChecked(true);
+                                }
+                            }
+                            // Note text
+                            String noteText = snapshot.child("text").getValue(String.class);
+                            editTripNote.setText(noteText);
+                        }
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(getContext(), "❌ Failed to load trip notes", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         }
 
-        // Save note logic
         btnSaveNote.setOnClickListener(v -> {
-            String updatedNote = tripNotes.getText().toString().trim();
-            if (trip != null) {
-                DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Trips")
-                        .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                        .child(trip.getTripId());
+            if (trip == null) return;
+            String noteText = editTripNote.getText().toString().trim();
 
-                ref.child("notes").setValue(updatedNote).addOnSuccessListener(unused -> {
-                    Toast.makeText(getContext(), "✅ Note updated", Toast.LENGTH_SHORT).show();
-                }).addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "❌ Failed to update note", Toast.LENGTH_SHORT).show();
-                });
+            // Get selected mood
+            String mood = "";
+            int selectedId = radioMoodGroup.getCheckedRadioButtonId();
+            if (selectedId != -1) {
+                RadioButton selected = view.findViewById(selectedId);
+                mood = selected.getText().toString();
             }
+
+            // Get selected tags
+            List<String> tags = new ArrayList<>();
+            if (tagTraffic.isChecked()) tags.add("Heavy Traffic");
+            if (tagWeather.isChecked()) tags.add("Rainy/ Slippery Road");
+            if (tagHelmet.isChecked()) tags.add("Helmet Helped");
+
+            Map<String, Object> noteMap = new HashMap<>();
+            noteMap.put("mood", mood);
+            noteMap.put("tags", tags);
+            noteMap.put("text", noteText);
+
+            DatabaseReference notesRef = FirebaseDatabase.getInstance()
+                    .getReference("Trips")
+                    .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                    .child(trip.getTripId())
+                    .child("notes");
+
+            notesRef.setValue(noteMap).addOnSuccessListener(unused ->
+                    Toast.makeText(getContext(), "✅ Note updated", Toast.LENGTH_SHORT).show()
+            ).addOnFailureListener(e ->
+                    Toast.makeText(getContext(), "❌ Failed to update note", Toast.LENGTH_SHORT).show()
+            );
         });
 
-        // Delete trip logic
         btnDeleteTrip.setOnClickListener(v -> {
-            if (trip != null) {
-                DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Trips")
-                        .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                        .child(trip.getTripId());
-
-                ref.removeValue().addOnSuccessListener(unused -> {
-                    Toast.makeText(getContext(), "🗑️ Trip deleted", Toast.LENGTH_SHORT).show();
-                    requireActivity().getSupportFragmentManager().popBackStack();
-                }).addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "❌ Failed to delete trip", Toast.LENGTH_SHORT).show();
-                });
-            }
+            if (trip == null) return;
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Delete Trip")
+                    .setMessage("Are you sure you want to delete this trip?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        DatabaseReference ref = FirebaseDatabase.getInstance()
+                                .getReference("Trips")
+                                .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                .child(trip.getTripId());
+                        ref.removeValue()
+                                .addOnSuccessListener(unused -> {
+                                    Toast.makeText(getContext(), "🗑️ Trip deleted", Toast.LENGTH_SHORT).show();
+                                    requireActivity().getSupportFragmentManager().popBackStack();
+                                })
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(getContext(), "❌ Failed to delete trip", Toast.LENGTH_SHORT).show());
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         });
 
         return view;
@@ -102,7 +184,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
         map = googleMap;
         map.getUiSettings().setZoomControlsEnabled(true);
 
-        // Load and draw route from Firebase
         if (trip != null) {
             DatabaseReference pathRef = FirebaseDatabase.getInstance()
                     .getReference("Trips")
@@ -129,8 +210,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                                 .color(ContextCompat.getColor(requireContext(), R.color.helmet_blue))
                                 .geodesic(true);
                         map.addPolyline(polylineOptions);
-
-                        // Move camera to start point
                         map.moveCamera(CameraUpdateFactory.newLatLngZoom(route.get(0), 15f));
                     }
                 }

@@ -2,52 +2,45 @@ package com.example.helmethero.fragments.rider;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Toast;
+import android.view.*;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.*;
 
 import com.example.helmethero.R;
+import com.example.helmethero.adapters.DateAdapter;
 import com.example.helmethero.adapters.TripHistoryAdapter;
 import com.example.helmethero.models.Trip;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.*;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 public class RiderHistoryFragment extends Fragment {
 
-    private TripHistoryAdapter adapter;
-    private List<Trip> tripList;
+    private DateAdapter dateAdapter;
+    private TripHistoryAdapter tripHistoryAdapter;
+    private List<Trip> tripList = new ArrayList<>();
+    private List<Integer> dayList = new ArrayList<>();
+    private RecyclerView recyclerDatePicker, recyclerTripHistory;
+    private TextView textMonthPicker;
+    private LinearLayout layoutEmptyState;
     private DatabaseReference tripsRef;
 
-    // ✅ Add this comparator just before loadTrips()
-    private final Comparator<Trip> timestampDescendingComparator = (t1, t2) -> {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-            Date date1 = sdf.parse(t1.getTimestamp());
-            Date date2 = sdf.parse(t2.getTimestamp());
-            return date2.compareTo(date1); // latest first
-        } catch (Exception e) {
-            return 0;
-        }
-    };
+    // Restore state
+    private int selectedYear, selectedMonth, selectedDay;
+
+    private int presentDay = -1; // NEW: track present day of month for highlight
+
+    private static final String STATE_YEAR = "state_year";
+    private static final String STATE_MONTH = "state_month";
+    private static final String STATE_DAY = "state_day";
 
     @Nullable
     @Override
@@ -55,57 +48,159 @@ public class RiderHistoryFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rider_trip_history, container, false);
 
-        RecyclerView recyclerView = view.findViewById(R.id.recyclerTripHistory);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        tripList = new ArrayList<>();
-        adapter = new TripHistoryAdapter(tripList);
-        recyclerView.setAdapter(adapter);
+        recyclerDatePicker = view.findViewById(R.id.recyclerDatePicker);
+        recyclerTripHistory = view.findViewById(R.id.recyclerTripHistory);
+        textMonthPicker = view.findViewById(R.id.textMonthPicker);
+        layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
 
-        String uid = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+        recyclerDatePicker.setLayoutManager(
+                new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        recyclerTripHistory.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        tripHistoryAdapter = new TripHistoryAdapter(tripList, trip -> {
+            Fragment detailFragment = RiderTripDetailFragment.newInstance(trip);
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .add(R.id.fragment_container, detailFragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+        recyclerTripHistory.setAdapter(tripHistoryAdapter);
+
+        // Restore from bundle if available
+        if (savedInstanceState != null) {
+            selectedYear = savedInstanceState.getInt(STATE_YEAR, Calendar.getInstance().get(Calendar.YEAR));
+            selectedMonth = savedInstanceState.getInt(STATE_MONTH, Calendar.getInstance().get(Calendar.MONTH));
+            selectedDay = savedInstanceState.getInt(STATE_DAY, Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
+        } else {
+            Calendar calendar = Calendar.getInstance();
+            selectedYear = calendar.get(Calendar.YEAR);
+            selectedMonth = calendar.get(Calendar.MONTH);
+            selectedDay = calendar.get(Calendar.DAY_OF_MONTH);
+        }
+
+        updatePresentDay();
+        setupMonthPicker();
+        setupDatePicker();
+
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         tripsRef = FirebaseDatabase.getInstance().getReference("Trips").child(uid);
 
-        loadTrips();
+        loadTripsForSelectedDate();
 
         return view;
     }
 
-    private void loadTrips() {
-        tripsRef.addValueEventListener(new ValueEventListener() {
-            @SuppressLint("NotifyDataSetChanged")
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                tripList.clear();
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    Trip trip = dataSnapshot.getValue(Trip.class);
-                    if (trip != null) {
-                        tripList.add(trip);
-                    }
+    // Save state
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_YEAR, selectedYear);
+        outState.putInt(STATE_MONTH, selectedMonth);
+        outState.putInt(STATE_DAY, selectedDay);
+    }
+
+    private void setupMonthPicker() {
+        updateMonthPickerText();
+        textMonthPicker.setOnClickListener(v -> {
+            MaterialDatePicker<Long> datePicker =
+                    MaterialDatePicker.Builder.datePicker()
+                            .setTitleText("Select Month")
+                            .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                            .build();
+
+            datePicker.show(getParentFragmentManager(), "MONTH_PICKER");
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(selection);
+                selectedYear = calendar.get(Calendar.YEAR);
+                selectedMonth = calendar.get(Calendar.MONTH);
+
+                // If selected month is this month, highlight today, else default to day 1
+                Calendar now = Calendar.getInstance();
+                if (now.get(Calendar.YEAR) == selectedYear && now.get(Calendar.MONTH) == selectedMonth) {
+                    selectedDay = now.get(Calendar.DAY_OF_MONTH);
+                } else {
+                    selectedDay = 1;
                 }
-
-                // ✅ Sort trips by timestamp descending (latest first)
-                tripList.sort((t1, t2) -> {
-                    try {
-                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                        java.util.Date date1 = sdf.parse(t1.getTimestamp());
-                        java.util.Date date2 = sdf.parse(t2.getTimestamp());
-                        return date2.compareTo(date1); // latest first
-                    } catch (Exception e) {
-                        return 0;
-                    }
-                });
-
-                adapter.notifyDataSetChanged();
-
-                // ✅ Sort using the comparator
-                tripList.sort(timestampDescendingComparator);
-                adapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(getContext(), "Failed to load trip history.", Toast.LENGTH_SHORT).show();
-            }
+                updatePresentDay(); // <--- must update presentDay here
+                updateMonthPickerText();
+                updateDatePicker();
+                loadTripsForSelectedDate();
+            });
         });
     }
 
+    private void updatePresentDay() {
+        // Calculate presentDay for current selected year/month
+        Calendar now = Calendar.getInstance();
+        if (now.get(Calendar.YEAR) == selectedYear && now.get(Calendar.MONTH) == selectedMonth) {
+            presentDay = now.get(Calendar.DAY_OF_MONTH);
+        } else {
+            presentDay = -1;
+        }
+    }
+
+    private void updateMonthPickerText() {
+        String monthYear = new SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+                .format(new GregorianCalendar(selectedYear, selectedMonth, 1).getTime());
+        textMonthPicker.setText(monthYear.toUpperCase());
+    }
+
+    private void setupDatePicker() {
+        buildDayListAndAdapter();
+    }
+
+    private void buildDayListAndAdapter() {
+        dayList.clear();
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.YEAR, selectedYear);
+        cal.set(Calendar.MONTH, selectedMonth);
+        int maxDay = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        for (int i = 1; i <= maxDay; i++) dayList.add(i);
+
+        int highlightDay = selectedDay; // always use the restored value
+        if (dateAdapter == null) {
+            dateAdapter = new DateAdapter(dayList, selectedMonth, selectedYear, (day, month, year) -> {
+                selectedDay = day;
+                selectedMonth = month;
+                selectedYear = year;
+                updatePresentDay(); // Just in case user navigates (optional)
+                loadTripsForSelectedDate();
+                buildDayListAndAdapter(); // To refresh highlight
+            });
+            recyclerDatePicker.setAdapter(dateAdapter);
+        }
+        dateAdapter.updateDays(dayList, selectedMonth, selectedYear, highlightDay, presentDay);
+
+        // Auto-scroll to currently selected day
+        recyclerDatePicker.post(() -> recyclerDatePicker.scrollToPosition(highlightDay - 1));
+    }
+
+    private void updateDatePicker() {
+        buildDayListAndAdapter();
+    }
+
+    private void loadTripsForSelectedDate() {
+        String dateKey = String.format(Locale.getDefault(), "%04d-%02d-%02d",
+                selectedYear, selectedMonth + 1, selectedDay);
+
+        tripsRef.orderByChild("date").equalTo(dateKey)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @SuppressLint("NotifyDataSetChanged")
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        tripList.clear();
+                        for (DataSnapshot tripSnap : snapshot.getChildren()) {
+                            Trip trip = tripSnap.getValue(Trip.class);
+                            if (trip != null) tripList.add(trip);
+                        }
+                        tripHistoryAdapter.notifyDataSetChanged();
+
+                        layoutEmptyState.setVisibility(tripList.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
+    }
 }

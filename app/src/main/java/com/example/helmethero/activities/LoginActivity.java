@@ -20,7 +20,6 @@ public class LoginActivity extends AppCompatActivity {
     Spinner roleSpinner;
     Button loginButton;
     TextView signupText, forgotPassword;
-
     String selectedRole = "";
     FirebaseAuth auth;
     DatabaseReference userRef;

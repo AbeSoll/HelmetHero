@@ -1,0 +1,5 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#157A2C"/> <!-- Green for NEW, grey for ACKNOWLEDGED (set in code) -->
+    <corners android:radius="12dp"/>
+</shape>

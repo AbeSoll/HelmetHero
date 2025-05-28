@@ -10,40 +10,14 @@ public class Trip implements Serializable {
     private String duration;
     private String distance;
     private String avgSpeed;
-    private String notes;
     private String status;
-    private List<Map<String, Double>> routePoints;  // ✅ New: List of LatLng as map (lat/lng)
+    private String date;
+    private Map<String, Object> notes;
 
-    public Trip() {
-        // Required for Firebase
-    }
+    // Use the same name as Firebase ("path")
+    private List<Map<String, Double>> path;
 
-    public Trip(String tripId, String timestamp, String duration, String distance,
-                String notes, String status) {
-        this.tripId = tripId;
-        this.timestamp = timestamp;
-        this.duration = duration;
-        this.distance = distance;
-        this.notes = notes;
-        this.status = status;
-    }
-
-    // ✅ New Getter & Setter
-    public List<Map<String, Double>> getRoutePoints() {
-        return routePoints;
-    }
-
-    public void setRoutePoints(List<Map<String, Double>> routePoints) {
-        this.routePoints = routePoints;
-    }
-
-    public String getAvgSpeed() {
-        return avgSpeed;
-    }
-
-    public void setAvgSpeed(String avgSpeed) {
-        this.avgSpeed = avgSpeed;
-    }
+    public Trip() {}
 
     public String getTripId() { return tripId; }
     public void setTripId(String tripId) { this.tripId = tripId; }
@@ -57,9 +31,18 @@ public class Trip implements Serializable {
     public String getDistance() { return distance; }
     public void setDistance(String distance) { this.distance = distance; }
 
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
+    public String getAvgSpeed() { return avgSpeed; }
+    public void setAvgSpeed(String avgSpeed) { this.avgSpeed = avgSpeed; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getDate() { return date; }
+    public void setDate(String date) { this.date = date; }
+
+    public Map<String, Object> getNotes() { return notes; }
+    public void setNotes(Map<String, Object> notes) { this.notes = notes; }
+
+    public List<Map<String, Double>> getPath() { return path; }
+    public void setPath(List<Map<String, Double>> path) { this.path = path; }
 }

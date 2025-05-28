@@ -8,6 +8,8 @@
     <string name="login_button_text">Log in</string>
     <string name="forgot_password_text">Forgot password?</string>
     <string name="signup_text">Sign up</string>
+    <string name="navigate">Navigate</string>
+    <string name="no_trip_icon" />
     <string-array name="roles">
         <item>Rider</item>
         <item>Family Member</item>

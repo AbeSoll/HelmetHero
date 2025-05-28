@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#DDE9FF">
+
+    <!-- Title (Boleh dynamic tukar: "Trip History: [Nama Rider]") -->
+    <TextView
+        android:id="@+id/textRiderTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Trip History"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:textColor="@android:color/black"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Month Picker Button (Pill Style) -->
+    <TextView
+        android:id="@+id/textMonthPicker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="JUNE 2025"
+        android:textSize="16sp"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/bg_month_picker"
+        android:padding="8dp"
+        android:layout_gravity="center_horizontal"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Horizontal Date RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerDatePicker"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:overScrollMode="never"
+        android:layout_marginBottom="8dp"
+        android:paddingBottom="4dp"
+        android:clipToPadding="false"/>
+
+    <!-- Trip History RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerFamilyTrips"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp" />
+
+    <!-- Empty State (centered vertically if no trips) -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_trip_empty"
+            android:contentDescription="@string/no_trip_icon" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No trips recorded for this day"
+            android:textColor="#808080"
+            android:textSize="16sp"
+            android:layout_marginTop="12dp"/>
+    </LinearLayout>
+</LinearLayout>

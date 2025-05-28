@@ -4,4 +4,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="primary_blue">#265bb8</color>
     <color name="helmet_blue">#265BB8</color>
+    <color name="colorPrimary">#6196D6</color>
 </resources>

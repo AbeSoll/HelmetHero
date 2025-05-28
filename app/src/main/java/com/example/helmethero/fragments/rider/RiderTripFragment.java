@@ -2,6 +2,7 @@ package com.example.helmethero.fragments.rider;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -24,11 +25,13 @@ import androidx.fragment.app.Fragment;
 
 import com.example.helmethero.R;
 import com.example.helmethero.activities.RiderHomeActivity;
+import com.example.helmethero.utils.HelmetConnectionManager;
 import com.google.android.gms.location.*;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
-
-import com.example.helmethero.utils.HelmetConnectionManager;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,6 +61,9 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     };
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+
+    // === tripActive flag logic ===
+    private String riderUid;
 
     public RiderTripFragment() {}
 
@@ -95,20 +101,149 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         startTimeMillis = SystemClock.elapsedRealtime();
         durationHandler.post(durationRunnable);
 
+        // === Set tripActive flag: true at trip start ===
+        riderUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        setTripActiveFlag(true);
+
         endTripButton.setOnClickListener(v -> {
-            long duration = SystemClock.elapsedRealtime() - startTimeMillis;
-            double avgSpeed = totalDistanceKm / (duration / 3600000.0);
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("End Trip?")
+                    .setMessage("Are you sure you want to end this trip?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        long duration = SystemClock.elapsedRealtime() - startTimeMillis;
+                        double avgSpeed = totalDistanceKm / (duration / 3600000.0);
 
-            RiderTripSummaryFragment summaryFragment =
-                    RiderTripSummaryFragment.newInstance(duration, totalDistanceKm, avgSpeed, routePoints);
+                        // === Set tripActive flag: false at trip end ===
+                        setTripActiveFlag(false);
 
-            requireActivity().getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, summaryFragment)
-                    .addToBackStack(null)
-                    .commit();
+                        RiderTripSummaryFragment summaryFragment =
+                                RiderTripSummaryFragment.newInstance(duration, totalDistanceKm, avgSpeed, routePoints);
+
+                        requireActivity().getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container, summaryFragment)
+                                .addToBackStack(null)
+                                .commit();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
+
+        Button sosButton = view.findViewById(R.id.btnSos);
+        sosButton.setOnClickListener(v -> {
+            String userUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            DatabaseReference ref =
+                    FirebaseDatabase.getInstance()
+                            .getReference("Riders").child(userUid).child("liveTracking");
+
+            java.util.Map<String, Object> sosData = new java.util.HashMap<>();
+            sosData.put("sosAlert", true);
+            sosData.put("alert", "IMPACT"); // or "TILT"
+            sosData.put("alertTime", getCurrentTime());
+
+            if (lastLocation != null) {
+                double lat = lastLocation.getLatitude();
+                double lng = lastLocation.getLongitude();
+                sosData.put("location", lat + "," + lng);
+            } else {
+                sosData.put("location", "0,0");
+                Toast.makeText(requireContext(), "Location unavailable. Using default coordinates.", Toast.LENGTH_SHORT).show();
+            }
+
+            ref.updateChildren(sosData);
+            Toast.makeText(requireContext(), "SOS sent to Firebase!", Toast.LENGTH_SHORT).show();
+        });
+
+        // ... inside onCreateView, after ref.updateChildren(sosData);
+
+        sosButton.setOnClickListener(v -> {
+            String userUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            DatabaseReference ref =
+                    FirebaseDatabase.getInstance()
+                            .getReference("Riders").child(userUid).child("liveTracking");
+
+            java.util.Map<String, Object> sosData = new java.util.HashMap<>();
+            sosData.put("sosAlert", true);
+            sosData.put("alert", "IMPACT"); // or "TILT"
+            String timeNow = getCurrentTime();
+            sosData.put("alertTime", timeNow);
+
+            String locationStr;
+            if (lastLocation != null) {
+                double lat = lastLocation.getLatitude();
+                double lng = lastLocation.getLongitude();
+                locationStr = lat + "," + lng;
+                sosData.put("location", locationStr);
+            } else {
+                locationStr = "0,0";
+                sosData.put("location", locationStr);
+                Toast.makeText(requireContext(), "Location unavailable. Using default coordinates.", Toast.LENGTH_SHORT).show();
+            }
+
+            ref.updateChildren(sosData);
+            Toast.makeText(requireContext(), "SOS sent to Firebase!", Toast.LENGTH_SHORT).show();
+
+            // --- ALSO add alert to all family members ---
+            DatabaseReference riderRef = FirebaseDatabase.getInstance()
+                    .getReference("Riders").child(userUid);
+
+            riderRef.child("emergencyContacts").addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                    for (com.google.firebase.database.DataSnapshot contactSnap : snapshot.getChildren()) {
+                        String familyUid = contactSnap.getKey();
+                        if (familyUid == null) continue;
+
+                        String alertId = FirebaseDatabase.getInstance().getReference("Alerts").child(familyUid).push().getKey();
+                        if (alertId == null) continue;
+
+                        // Optionally get rider info for display
+                        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userUid);
+                        userRef.addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot userSnap) {
+                                String riderName = userSnap.child("name").getValue(String.class);
+                                String profileImageUrl = userSnap.child("profileImageUrl").getValue(String.class);
+
+                                com.example.helmethero.models.Alert alert = new com.example.helmethero.models.Alert(
+                                        alertId,
+                                        userUid,
+                                        riderName,
+                                        profileImageUrl,
+                                        "IMPACT", // or "SOS"
+                                        timeNow,
+                                        locationStr,
+                                        "NEW",
+                                        false
+                                );
+
+                                FirebaseDatabase.getInstance()
+                                        .getReference("Alerts")
+                                        .child(familyUid)
+                                        .child(alertId)
+                                        .setValue(alert);
+                            }
+                            @Override public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {}
+                        });
+                    }
+                }
+                @Override public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {}
+            });
         });
 
         return view;
+    }
+
+    // === tripActive flag setter ===
+    private void setTripActiveFlag(boolean active) {
+        if (riderUid == null) return;
+        DatabaseReference liveRef = FirebaseDatabase.getInstance()
+                .getReference("Riders").child(riderUid).child("liveTracking");
+        liveRef.child("tripActive").setValue(active);
+    }
+
+    private String getCurrentTime() {
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+        return sdf.format(new java.util.Date());
     }
 
     @SuppressLint("MissingPermission")
@@ -180,8 +315,17 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     private void updateTrip(Location location) {
         if (lastLocation != null) {
             float distance = lastLocation.distanceTo(location);
-            totalDistanceKm += distance / 1000.0;
-            updateDistanceUI();
+            float accuracy = location.getAccuracy();
+
+            if (distance >= 5 && accuracy <= 10) {
+                totalDistanceKm += distance / 1000.0;
+                updateDistanceUI();
+                lastLocation = location;
+                LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
+                routePoints.add(point);
+                drawRoute();
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
+            }
         }
 
         lastLocation = location;
@@ -190,14 +334,12 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         drawRoute();
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
 
-        // ✅ Real-time speed update (safe fallback)
-        if (location.hasSpeed()) {
-            float speedMps = location.getSpeed(); // meters/second
-            float speedKph = speedMps * 3.6f;
-            speedText.setText(String.format(Locale.getDefault(), "%.1f km/h", speedKph));
-        } else {
-            speedText.setText("0.0 km/h");
-        }
+        float speedMps = location.hasSpeed() ? location.getSpeed() : 0f;
+        float speedKph = speedMps * 3.6f;
+
+        if (speedKph < 1.0f) speedKph = 0.0f;
+
+        speedText.setText(String.format(Locale.getDefault(), "%.1f km/h", speedKph));
     }
 
     private void drawRoute() {
@@ -226,7 +368,9 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Restore nav bar only when view is removed
+        // === Robustly set tripActive: false if user leaves this fragment (unexpectedly) ===
+        setTripActiveFlag(false);
+
         if (getActivity() instanceof RiderHomeActivity) {
             ((RiderHomeActivity) getActivity()).setBottomNavVisibility(true);
         }

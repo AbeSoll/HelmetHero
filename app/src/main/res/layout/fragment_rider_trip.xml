@@ -4,13 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 🗺️ Google Map Fragment Container (injected dynamically) -->
+    <!-- 🗺️ Google Map Fragment -->
+
+    <!-- 🧾 Overlay for Helmet + Stats + End Button -->
     <FrameLayout
         android:id="@+id/map_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 🔍 Overlay for Helmet status, trip stats, and end button -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,27 +21,30 @@
         android:layout_gravity="top"
         android:background="@android:color/transparent">
 
-        <!-- 🟢 Helmet Status -->
+        <!-- ✅ Helmet Status Banner -->
         <TextView
             android:id="@+id/textHelmetStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🟢 Helmet Connected"
             android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="@android:color/white"
-            android:background="#88000000"
+            android:background="@drawable/rounded_overlay_dark"
             android:padding="8dp"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="12dp"
+            android:elevation="2dp"/>
 
-        <!-- 📊 Trip Stats -->
+        <!-- 📊 Trip Stats Container -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:background="#88000000"
-            android:padding="10dp"
-            android:layout_marginBottom="16dp">
+            android:background="@drawable/rounded_overlay_dark"
+            android:padding="12dp"
+            android:elevation="2dp"
+            android:layout_marginBottom="16dp"
+            android:gravity="center">
 
             <!-- ⏱ Duration -->
             <LinearLayout
@@ -57,14 +61,14 @@
                     android:text="00:00:00"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@android:color/white"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Duration"
                     android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="#DDDDDD"/>
             </LinearLayout>
 
             <!-- 📏 Distance -->
@@ -82,14 +86,14 @@
                     android:text="0.00 km"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@android:color/white"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Distance"
                     android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="#DDDDDD"/>
             </LinearLayout>
 
             <!-- ⚡ Speed -->
@@ -106,15 +110,15 @@
                     android:layout_height="wrap_content"
                     android:text="0.0 km/h"
                     android:textSize="18sp"
-                    android:textColor="@android:color/white"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Speed"
                     android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="#DDDDDD"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -124,9 +128,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="End Trip"
-            android:backgroundTint="@android:color/holo_red_dark"
+            android:backgroundTint="#B00020"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:layout_marginTop="4dp" />
+            android:elevation="3dp"/>
+
+        <Button
+            android:id="@+id/btnSos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send SOS"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="16dp"/>
+
     </LinearLayout>
+
 </FrameLayout>

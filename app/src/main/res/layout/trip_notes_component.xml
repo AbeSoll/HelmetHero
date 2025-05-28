@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tripNotesSection"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- 😀 Mood Selector -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="How was your ride?"
+        android:textSize="14sp"
+        android:textColor="#555555"
+        android:layout_marginBottom="4dp"
+        android:fontFamily="@font/poppins"/>
+
+    <RadioGroup
+        android:id="@+id/radioMoodGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <RadioButton
+            android:id="@+id/mood_happy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="😄"
+            android:background="@drawable/bg_mood_selector"
+            android:padding="12dp"
+            android:button="@null"
+            android:textSize="24sp"
+            android:textAlignment="center"
+            android:layout_marginEnd="8dp" />
+
+        <RadioButton android:id="@+id/mood_calm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="😌"
+            android:background="@drawable/bg_mood_selector"
+            android:padding="12dp"
+            android:button="@null"
+            android:textSize="24sp"
+            android:textAlignment="center"
+            android:layout_marginEnd="8dp" />
+
+        <RadioButton android:id="@+id/mood_stressed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="😰"
+            android:background="@drawable/bg_mood_selector"
+            android:padding="12dp"
+            android:button="@null"
+            android:textSize="24sp"
+            android:textAlignment="center"
+            android:layout_marginEnd="8dp" />
+
+        <RadioButton android:id="@+id/mood_alert"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚠️"
+            android:background="@drawable/bg_mood_selector"
+            android:padding="12dp"
+            android:button="@null"
+            android:textSize="24sp"
+            android:textAlignment="center"
+            android:layout_marginEnd="8dp" />
+    </RadioGroup>
+
+    <!-- 🏷️ Quick Tags -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tags (select any)"
+        android:textSize="13sp"
+        android:textColor="#555555"
+        android:layout_marginBottom="4dp"
+        android:fontFamily="@font/poppins"/>
+
+    <LinearLayout
+        android:id="@+id/tagsContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:gravity="start"
+        android:layoutDirection="ltr"
+        android:orientation="horizontal">
+
+        <CheckBox
+            android:id="@+id/tag_traffic"
+            android:layout_width="74dp"
+            android:layout_height="wrap_content"
+            android:buttonTint="#265BB8"
+            android:fontFamily="@font/poppins"
+            android:paddingEnd="8dp"
+            android:text="Heavy Traffic"
+            android:textColor="#333333"
+            android:textSize="10dp" />
+
+        <CheckBox
+            android:id="@+id/tag_weather"
+            android:layout_width="115dp"
+            android:layout_height="wrap_content"
+            android:buttonTint="#265BB8"
+            android:fontFamily="@font/poppins"
+            android:paddingEnd="8dp"
+            android:text="Rainy/ Slippery Road"
+            android:textColor="#333333"
+            android:textSize="10dp" />
+
+        <CheckBox
+            android:id="@+id/tag_helmet"
+            android:layout_width="82dp"
+            android:layout_height="wrap_content"
+            android:buttonTint="#265BB8"
+            android:fontFamily="@font/poppins"
+            android:text="Helmet Helped"
+            android:textColor="#333333"
+            android:textSize="10dp" />
+    </LinearLayout>
+
+    <!-- ✍️ Main Notes Box -->
+    <EditText
+        android:id="@+id/editTripNote"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="@drawable/edittext_background"
+        android:hint="Write something about your ride..."
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:gravity="top|start"
+        android:inputType="textMultiLine"
+        android:maxLines="5"
+        android:layout_marginBottom="8dp"
+        android:fontFamily="@font/poppins"/>
+
+</LinearLayout>

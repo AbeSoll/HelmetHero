@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/rounded_white_box"
+    android:padding="14dp"
+    android:gravity="center_vertical"
+    android:layout_marginBottom="12dp"
+    android:elevation="3dp">
+
+    <!-- Rider Profile Image -->
+    <ImageView
+        android:id="@+id/imgProfile"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_profile"
+        android:background="@drawable/bg_profile_circle"
+        android:elevation="4dp"
+        android:layout_marginEnd="14dp" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_weight="1">
+
+        <!-- Rider Name + Type badge row -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/textRiderName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rider Name"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#253463"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_marginEnd="10dp"/>
+
+            <TextView
+                android:id="@+id/textAlertType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IMPACT"
+                android:textSize="13sp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bg_alert_type_badge"
+                android:layout_marginStart="0dp"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textAlertTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Time: 2024-01-01 12:01"
+            android:textColor="#556"
+            android:textSize="14sp"
+            android:layout_marginTop="2dp"/>
+
+        <TextView
+            android:id="@+id/textAlertLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Location: 2.1653, 103.116"
+            android:textColor="#556"
+            android:textSize="14sp"/>
+
+    </LinearLayout>
+
+    <!-- Status badge (NEW or ACKNOWLEDGED) -->
+    <TextView
+        android:id="@+id/textAlertStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NEW"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:background="@drawable/bg_status_badge"
+        android:textColor="#FFFFFF"
+        android:layout_marginStart="8dp"
+        android:gravity="center" />
+</LinearLayout>

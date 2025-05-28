@@ -1,0 +1,39 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#DDE9FF"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/textHistoryTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Your Linked Riders"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#1E2D60"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerLinkedRiders"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/textNoLinkedRiders"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No linked riders yet."
+        android:textColor="#6B7280"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="24dp"
+        android:visibility="gone"
+        android:background="@drawable/rounded_white_box" />
+</LinearLayout>

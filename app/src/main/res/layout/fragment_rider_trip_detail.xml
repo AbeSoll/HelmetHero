@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#DDE9FF"
@@ -9,20 +11,40 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@android:color/white"
+        android:background="@drawable/rounded_white_box"
         android:padding="20dp"
         android:elevation="3dp"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginHorizontal="8dp"
-        android:clipToPadding="false"
-        android:gravity="start">
+        android:clipToPadding="false">
 
-        <!-- 🗺️ Map Preview -->
+        <!-- 🔙 Back Button -->
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="start"
+            android:layout_marginBottom="12dp"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back to previous screen"
+            android:clickable="true"
+            android:focusable="true"
+            tools:ignore="HardcodedText" />
+
+        <!-- 🗺️ Route Map Preview -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Trip Route"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp"
+            android:textColor="#1E2D60"/>
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:layout_marginBottom="20dp">
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/rounded_grey_border">
 
             <fragment
                 android:id="@+id/routeMap"
@@ -31,81 +53,96 @@
                 android:layout_height="match_parent" />
         </FrameLayout>
 
-        <!-- 📊 Trip Info -->
+        <!-- 📊 Trip Info Section -->
         <TextView
-            android:id="@+id/tripDate"
+            android:text="Trip Summary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Date: --"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#000000"
-            android:layout_marginBottom="4dp" />
+            android:textColor="#1E2D60"
+            android:layout_marginBottom="12dp"/>
 
-        <TextView
-            android:id="@+id/tripDurationValue"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Duration: 00:00:00"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:id="@+id/tripDistanceValue"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Distance: 0.00 km"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:id="@+id/tripAvgSpeedValue"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Average Speed: 0.0 km/h"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:layout_marginBottom="12dp" />
-
-        <!-- 📝 Notes -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Notes"
-            android:textSize="14sp"
-            android:textColor="#666666"
-            android:layout_marginBottom="6dp" />
-
-        <EditText
-            android:id="@+id/tripNotes"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:hint="Edit your notes..."
-            android:gravity="top|start"
-            android:background="@android:drawable/editbox_background"
-            android:padding="10dp"
-            android:textSize="14sp"
-            android:layout_marginBottom="20dp" />
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/rounded_lightblue_box"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView android:id="@+id/tripDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Date: --"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView android:id="@+id/tripDurationValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Duration: 00:00:00"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView android:id="@+id/tripDistanceValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Distance: 0.00 km"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView android:id="@+id/tripAvgSpeedValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Average Speed: 0.0 km/h"
+                android:textColor="#000000"
+                android:textSize="16sp"/>
+        </LinearLayout>
+
+        <!-- 📝 Notes Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Trip Notes"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#1E2D60"
+            android:layout_marginBottom="6dp"/>
 
         <!-- ✅ Save + ❌ Delete Buttons -->
-        <Button
-            android:id="@+id/btnSaveNote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Save"
-            android:backgroundTint="#265BB8"
-            android:textColor="@android:color/white"
-            android:layout_marginBottom="12dp" />
+        <include layout="@layout/trip_notes_component" />
 
-        <Button
-            android:id="@+id/btnDeleteTrip"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Delete"
-            android:backgroundTint="#B00020"
-            android:textColor="@android:color/white" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/btnSaveNote"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Save"
+                android:backgroundTint="#265BB8"
+                android:textColor="@android:color/white"
+                android:layout_marginEnd="8dp"/>
+
+            <Button
+                android:id="@+id/btnDeleteTrip"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Delete Trip"
+                android:backgroundTint="#B00020"
+                android:textColor="@android:color/white"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

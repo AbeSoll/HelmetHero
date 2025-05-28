@@ -1,0 +1,106 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bottomSheetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_rider_card_minimal"
+    android:orientation="horizontal"
+    android:padding="20dp"
+    android:gravity="center_vertical">
+
+    <!-- Profile Image -->
+    <ImageView
+        android:id="@+id/imgProfilePhoto"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/ic_profile"
+        android:background="@drawable/bg_profile_circle"
+        android:scaleType="centerCrop"
+        android:layout_marginRight="18dp" />
+
+    <!-- Rider Info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textRiderName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ahmad Solehin"
+            android:textStyle="bold"
+            android:textSize="17sp"
+            android:textColor="#1A2333" />
+
+        <TextView
+            android:id="@+id/textLiveStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Active"
+            android:textColor="#6196D6"
+            android:textSize="13sp"
+            android:layout_marginTop="3dp" />
+
+        <TextView
+            android:id="@+id/textLiveSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="000.0 km/h"
+            android:textColor="#666"
+            android:textSize="13sp"
+            android:layout_marginTop="1dp" />
+
+        <TextView
+            android:id="@+id/textLiveLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2.16754, 103.1324"
+            android:textColor="#888"
+            android:textSize="13sp"
+            android:layout_marginTop="1dp" />
+
+        <!-- NEW: Last update time -->
+        <TextView
+            android:id="@+id/textLastUpdate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Last update: -"
+            android:textColor="#888"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+
+    <!-- Navigation Button with Label -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:layout_marginStart="12dp">
+
+        <ImageView
+            android:id="@+id/btnNavigate"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_navigation"
+            android:contentDescription="@string/navigate"
+            app:tint="@null" />
+
+        <TextView
+            android:id="@+id/navigateLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Navigate"
+            android:textSize="12sp"
+            android:textColor="#6196D6"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

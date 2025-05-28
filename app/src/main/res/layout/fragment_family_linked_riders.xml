@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#DDE9FF">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/textLinkedRidersTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your Riders"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:textColor="#1E2D60"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp" />
+
+        <!-- RecyclerView Rider List -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerLinkedRiders"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false"
+            android:scrollbars="vertical" />
+
+        <!-- No Linked Rider Message -->
+        <TextView
+            android:id="@+id/textNoLinkedRiders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No linked riders found."
+            android:textSize="16sp"
+            android:textColor="#888888"
+            android:gravity="center"
+            android:visibility="gone" />
+</LinearLayout>

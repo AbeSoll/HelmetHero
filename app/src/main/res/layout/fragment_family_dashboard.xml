@@ -1,0 +1,55 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#DDE9FF"
+    android:padding="16dp">
+
+    <!-- Personalized Greeting -->
+    <TextView
+        android:id="@+id/textGreeting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Good morning, Asyi 👋"
+        android:textStyle="bold"
+        android:textSize="22sp"
+        android:textColor="#253463"
+        android:layout_marginBottom="2dp" />
+
+    <!-- Short motivational/support text -->
+    <TextView
+        android:id="@+id/textMotivation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Monitor your riders' safety in real-time below."
+        android:textSize="15sp"
+        android:textColor="#3D577C"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/textTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your Riders"
+        android:textStyle="bold"
+        android:textSize="17sp"
+        android:textColor="#1E2D60"
+        android:layout_marginBottom="6dp" />
+
+    <!-- Riders List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerRiderDashboard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:overScrollMode="always"/>
+
+    <TextView
+        android:id="@+id/textNoRiders"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No linked riders yet."
+        android:textColor="#A3A3A3"
+        android:layout_marginTop="24dp"
+        android:visibility="gone"/>
+</LinearLayout>
