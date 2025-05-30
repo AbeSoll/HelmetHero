@@ -63,6 +63,8 @@ public class BluetoothService {
             }
         }
         if (helmet == null) {
+            isConnected = false;
+            HelmetConnectionManager.setConnected(false);
             if (listener != null) listener.onStatusChanged(false);
             return;
         }
@@ -74,10 +76,12 @@ public class BluetoothService {
                 socket.connect();
                 inStream = socket.getInputStream();
                 isConnected = true;
+                HelmetConnectionManager.setConnected(true); // ✅ Update here
                 if (listener != null) listener.onStatusChanged(true);
                 startReading();
             } catch (IOException e) {
                 isConnected = false;
+                HelmetConnectionManager.setConnected(false); // ✅ Update here
                 if (listener != null) listener.onStatusChanged(false);
                 close();
             }
@@ -101,7 +105,6 @@ public class BluetoothService {
                             if (listener != null && !alert.isEmpty()) {
                                 listener.onHelmetAlert(alert);
                             }
-                            // Auto-upload to Firebase
                             if (!alert.isEmpty() && alert.startsWith("ALERT:")) {
                                 uploadAlertToFirebase(alert);
                             }
@@ -110,6 +113,7 @@ public class BluetoothService {
                 }
             } catch (IOException ignored) {
                 isConnected = false;
+                HelmetConnectionManager.setConnected(false); // ✅ Update here
                 if (listener != null) listener.onStatusChanged(false);
             }
         });
@@ -119,10 +123,7 @@ public class BluetoothService {
     private void uploadAlertToFirebase(String msg) {
         if (!msg.startsWith("ALERT:")) return;
 
-        String alertType = "";
-        String lat = "";
-        String lng = "";
-
+        String alertType = "", lat = "", lng = "";
         String[] parts = msg.split(";");
         for (String part : parts) {
             if (part.startsWith("ALERT:")) alertType = part.replace("ALERT:", "");
@@ -144,11 +145,9 @@ public class BluetoothService {
                 .child("liveTracking")
                 .updateChildren(alertData);
 
-        // Also create alert for every family member (so family Alert UI will show this alert)
         createFamilyAlertForHelmet(alertType, timeNow, lat + "," + lng);
     }
 
-    // --- Add this helper ---
     private void createFamilyAlertForHelmet(String alertType, String alertTime, String location) {
         String riderUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference riderRef = FirebaseDatabase.getInstance()
@@ -161,11 +160,12 @@ public class BluetoothService {
                     String familyUid = contactSnap.getKey();
                     if (familyUid == null) continue;
 
-                    String alertId = FirebaseDatabase.getInstance().getReference("Alerts").child(familyUid).push().getKey();
+                    String alertId = FirebaseDatabase.getInstance().getReference("Alerts")
+                            .child(familyUid).push().getKey();
                     if (alertId == null) continue;
 
-                    // Optionally get rider info for display
-                    DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(riderUid);
+                    DatabaseReference userRef = FirebaseDatabase.getInstance()
+                            .getReference("Users").child(riderUid);
                     userRef.addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot userSnap) {
@@ -173,15 +173,8 @@ public class BluetoothService {
                             String profileImageUrl = userSnap.child("profileImageUrl").getValue(String.class);
 
                             Alert alert = new Alert(
-                                    alertId,
-                                    riderUid,
-                                    riderName,
-                                    profileImageUrl,
-                                    alertType,
-                                    alertTime,
-                                    location,
-                                    "NEW",
-                                    false
+                                    alertId, riderUid, riderName, profileImageUrl,
+                                    alertType, alertTime, location, "NEW", false
                             );
 
                             FirebaseDatabase.getInstance()
@@ -190,10 +183,12 @@ public class BluetoothService {
                                     .child(alertId)
                                     .setValue(alert);
                         }
+
                         @Override public void onCancelled(@NonNull DatabaseError error) {}
                     });
                 }
             }
+
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
@@ -207,6 +202,7 @@ public class BluetoothService {
         try { if (inStream != null) inStream.close(); } catch (Exception ignored) {}
         try { if (socket != null) socket.close(); } catch (Exception ignored) {}
         isConnected = false;
+        HelmetConnectionManager.setConnected(false); // ✅ Update here
         if (listener != null) listener.onStatusChanged(false);
     }
 }

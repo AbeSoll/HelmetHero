@@ -18,25 +18,15 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="12dp" />
 
-    <!-- White rounded box container -->
-    <LinearLayout
+    <!-- RecyclerView (set height to 0dp with weight to leave space for Save button) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerEmergencyContacts"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@drawable/rounded_white_box"
-        android:orientation="vertical"
-        android:padding="12dp"
-        android:elevation="3dp">
-
-        <!-- RecyclerView Contact List -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerEmergencyContacts"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingBottom="8dp"
-            android:clipToPadding="false"
-            android:scrollbars="vertical" />
-    </LinearLayout>
+        android:clipToPadding="false"
+        android:scrollbars="vertical"
+        android:paddingBottom="8dp" />
 
     <!-- Save Button -->
     <Button
@@ -48,6 +38,5 @@
         android:textColor="@android:color/white"
         android:textAllCaps="false"
         android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
+        android:layout_marginTop="12dp" />
 </LinearLayout>

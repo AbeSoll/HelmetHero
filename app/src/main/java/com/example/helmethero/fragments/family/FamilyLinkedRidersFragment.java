@@ -3,6 +3,7 @@ package com.example.helmethero.fragments.family;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.*;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,7 +25,7 @@ import java.util.List;
 public class FamilyLinkedRidersFragment extends Fragment {
 
     private RecyclerView recyclerView;
-    private TextView textNoLinkedRiders;
+    private LinearLayout layoutNoLinkedRiders;
     private LinkedRiderAdapter adapter;
     private final List<User> riderList = new ArrayList<>();
 
@@ -35,12 +36,10 @@ public class FamilyLinkedRidersFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_family_linked_riders, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerLinkedRiders);
-        textNoLinkedRiders = view.findViewById(R.id.textNoLinkedRiders);
+        layoutNoLinkedRiders = view.findViewById(R.id.layoutNoLinkedRiders);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // ✅ Use the correct adapter constructor with a click listener!
         adapter = new LinkedRiderAdapter(riderList, rider -> {
-            // Ensure UID is not null or empty
             if (rider.getUid() == null || rider.getUid().isEmpty()) {
                 Toast.makeText(getContext(), "Rider UID not found!", Toast.LENGTH_SHORT).show();
                 return;
@@ -62,6 +61,16 @@ public class FamilyLinkedRidersFragment extends Fragment {
         return view;
     }
 
+    private void toggleEmptyState() {
+        if (riderList.isEmpty()) {
+            layoutNoLinkedRiders.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+        } else {
+            layoutNoLinkedRiders.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void loadLinkedRiders() {
         String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference ridersRef = FirebaseDatabase.getInstance().getReference("Riders");
@@ -76,7 +85,6 @@ public class FamilyLinkedRidersFragment extends Fragment {
                 List<String> linkedRiderUids = new ArrayList<>();
                 for (DataSnapshot riderSnap : snapshot.getChildren()) {
                     DataSnapshot contactsSnap = riderSnap.child("emergencyContacts");
-                    // **ONLY add if familyUid betul-betul ada dan value true!**
                     if (contactsSnap.hasChild(familyUid) && contactsSnap.child(familyUid).getValue(Boolean.class) != null
                             && Boolean.TRUE.equals(contactsSnap.child(familyUid).getValue(Boolean.class))) {
                         linkedRiderUids.add(riderSnap.getKey());
@@ -85,12 +93,10 @@ public class FamilyLinkedRidersFragment extends Fragment {
 
                 if (linkedRiderUids.isEmpty()) {
                     adapter.notifyDataSetChanged();
-                    textNoLinkedRiders.setVisibility(View.VISIBLE);
-                    textNoLinkedRiders.setText("No linked riders found.");
+                    toggleEmptyState();
                     return;
                 }
 
-                // Now fetch user info from /Users/{riderUid} for each
                 final int[] fetchCount = {0};
                 for (String riderUid : linkedRiderUids) {
                     usersRef.child(riderUid).addListenerForSingleValueEvent(new ValueEventListener() {
@@ -98,14 +104,13 @@ public class FamilyLinkedRidersFragment extends Fragment {
                         public void onDataChange(@NonNull DataSnapshot userSnap) {
                             User user = userSnap.getValue(User.class);
                             if (user != null) {
-                                user.setUid(userSnap.getKey());  // <- Must set UID here!
+                                user.setUid(userSnap.getKey());
                                 riderList.add(user);
                             }
                             fetchCount[0]++;
-                            // Only notify after all riders fetched
                             if (fetchCount[0] == linkedRiderUids.size()) {
                                 adapter.notifyDataSetChanged();
-                                textNoLinkedRiders.setVisibility(riderList.isEmpty() ? View.VISIBLE : View.GONE);
+                                toggleEmptyState();
                             }
                         }
 
@@ -114,7 +119,7 @@ public class FamilyLinkedRidersFragment extends Fragment {
                             fetchCount[0]++;
                             if (fetchCount[0] == linkedRiderUids.size()) {
                                 adapter.notifyDataSetChanged();
-                                textNoLinkedRiders.setVisibility(riderList.isEmpty() ? View.VISIBLE : View.GONE);
+                                toggleEmptyState();
                             }
                         }
                     });
@@ -123,8 +128,7 @@ public class FamilyLinkedRidersFragment extends Fragment {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                textNoLinkedRiders.setText("Failed to load linked riders.");
-                textNoLinkedRiders.setVisibility(View.VISIBLE);
+                toggleEmptyState();
             }
         });
     }

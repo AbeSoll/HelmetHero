@@ -28,10 +28,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (uid != null) {
             DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Users").child(uid).child("fcmToken");
             ref.setValue(token);
-            // Log and Toast for debugging
             android.util.Log.d("MyFirebaseMsgService", "FCM Token updated: " + token);
-            android.os.Handler handler = new android.os.Handler(getMainLooper());
-            handler.post(() -> android.widget.Toast.makeText(getApplicationContext(), "Token updated: " + token, android.widget.Toast.LENGTH_SHORT).show());
         }
     }
 
@@ -39,29 +36,39 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
-        // Default values
-        String title = "HelmetHero Alert";
+        // Dynamic title/message from FCM payload
+        String title = "HelmetHero";
         String message = "You have a new notification!";
         String googleMapsUrl = null;
 
-        // Always prioritize data payload (for custom FCM)
-        if (remoteMessage.getData() != null) {
-            if (remoteMessage.getData().containsKey("riderName")) {
-                String riderName = remoteMessage.getData().get("riderName");
-                title = "SOS: " + riderName;
-                message = riderName + " has triggered an SOS alert! Tap to view location.";
+        // 1. Prefer Data payload if present
+        if (remoteMessage.getData() != null && !remoteMessage.getData().isEmpty()) {
+            if (remoteMessage.getData().containsKey("title")) {
+                title = remoteMessage.getData().get("title");
+            }
+            if (remoteMessage.getData().containsKey("body")) {
+                message = remoteMessage.getData().get("body");
             }
             if (remoteMessage.getData().containsKey("googleMapsUrl")) {
                 googleMapsUrl = remoteMessage.getData().get("googleMapsUrl");
             }
+            // Fallback for previous function style: if riderName exists, update title/message
+            if (remoteMessage.getData().containsKey("riderName")) {
+                String riderName = remoteMessage.getData().get("riderName");
+                if (remoteMessage.getData().containsKey("sosType")) {
+                    title = "SOS: " + riderName;
+                    message = riderName + " has triggered an SOS alert! Tap to view location.";
+                }
+            }
+            // Trip start/end, link/unlink can just use title/body sent from backend
         }
 
-        // Optional fallback: use notification payload if data is missing
+        // 2. Use notification payload (if any) if not overridden above
         if (remoteMessage.getNotification() != null) {
-            if (title.equals("HelmetHero Alert") && remoteMessage.getNotification().getTitle() != null) {
+            if (remoteMessage.getNotification().getTitle() != null) {
                 title = remoteMessage.getNotification().getTitle();
             }
-            if (message.equals("You have a new notification!") && remoteMessage.getNotification().getBody() != null) {
+            if (remoteMessage.getNotification().getBody() != null) {
                 message = remoteMessage.getNotification().getBody();
             }
         }

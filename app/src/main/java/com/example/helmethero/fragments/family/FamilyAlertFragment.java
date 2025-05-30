@@ -3,8 +3,7 @@ package com.example.helmethero.fragments.family;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.*;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -15,16 +14,17 @@ import com.example.helmethero.models.Alert;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class FamilyAlertFragment extends Fragment {
 
     private RecyclerView recyclerAlerts;
-    private TextView textNoAlerts;
+    private LinearLayout layoutNoAlerts;
     private final List<Alert> alertList = new ArrayList<>();
     private AlertsAdapter alertsAdapter;
 
-    // For undo
     private Alert recentlyDeletedAlert = null;
     private int recentlyDeletedPosition = -1;
     private String recentlyDeletedAlertId = null;
@@ -37,13 +37,12 @@ public class FamilyAlertFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_family_alert, container, false);
 
         recyclerAlerts = view.findViewById(R.id.recyclerAlerts);
-        textNoAlerts = view.findViewById(R.id.textNoAlerts);
+        layoutNoAlerts = view.findViewById(R.id.layoutNoAlerts);
 
         recyclerAlerts.setLayoutManager(new LinearLayoutManager(getContext()));
         alertsAdapter = new AlertsAdapter(alertList);
         recyclerAlerts.setAdapter(alertsAdapter);
 
-        // Enable swipe-to-delete + undo
         ItemTouchHelper.SimpleCallback itemTouchHelperCallback =
                 new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
                     @Override
@@ -58,21 +57,20 @@ public class FamilyAlertFragment extends Fragment {
                         recentlyDeletedPosition = position;
                         recentlyDeletedAlertId = recentlyDeletedAlert.getId();
 
-                        // Remove from list immediately
                         alertList.remove(position);
                         alertsAdapter.notifyItemRemoved(position);
+                        toggleEmptyView();
 
-                        // Show Snackbar for Undo
                         Snackbar snackbar = Snackbar.make(recyclerAlerts, "Alert deleted", Snackbar.LENGTH_LONG);
                         snackbar.setAction("UNDO", v -> {
                             alertList.add(recentlyDeletedPosition, recentlyDeletedAlert);
                             alertsAdapter.notifyItemInserted(recentlyDeletedPosition);
+                            toggleEmptyView();
                             recentlyDeletedAlert = null;
                             recentlyDeletedAlertId = null;
                             if (pendingDeleteRunnable != null) recyclerAlerts.removeCallbacks(pendingDeleteRunnable);
                         });
 
-                        // If UNDO not clicked, after Snackbar timeout, remove from Firebase
                         pendingDeleteRunnable = () -> {
                             if (recentlyDeletedAlertId != null) {
                                 String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -81,8 +79,7 @@ public class FamilyAlertFragment extends Fragment {
                                 recentlyDeletedAlertId = null;
                             }
                         };
-                        recyclerAlerts.postDelayed(pendingDeleteRunnable, 3500); // Snackbar.LENGTH_LONG = ~3.5s
-
+                        recyclerAlerts.postDelayed(pendingDeleteRunnable, 3500);
                         snackbar.show();
                     }
                 };
@@ -93,11 +90,9 @@ public class FamilyAlertFragment extends Fragment {
         return view;
     }
 
-    // Fetch all linked riders and their alerts
     private void loadAllAlertsForAllLinkedRiders() {
         String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference ridersRef = FirebaseDatabase.getInstance().getReference("Riders");
-        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
 
         ridersRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -112,21 +107,31 @@ public class FamilyAlertFragment extends Fragment {
                 if (linkedRiderUids.isEmpty()) {
                     alertList.clear();
                     alertsAdapter.notifyDataSetChanged();
-                    textNoAlerts.setVisibility(View.VISIBLE);
-                    textNoAlerts.setText("No linked riders.");
+                    toggleEmptyView();
                     return;
                 }
                 fetchAllAlerts(linkedRiderUids);
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                textNoAlerts.setVisibility(View.VISIBLE);
-                textNoAlerts.setText("Failed to load linked riders.");
+                alertList.clear();
+                alertsAdapter.notifyDataSetChanged();
+                toggleEmptyView();
             }
         });
     }
 
-    // Fetch ALL alerts (history/archive) for all linked riders
+    private void toggleEmptyView() {
+        if (alertList.isEmpty()) {
+            layoutNoAlerts.setVisibility(View.VISIBLE);
+            recyclerAlerts.setVisibility(View.GONE);
+        } else {
+            layoutNoAlerts.setVisibility(View.GONE);
+            recyclerAlerts.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void fetchAllAlerts(List<String> riderUids) {
         alertList.clear();
         alertsAdapter.notifyDataSetChanged();
@@ -135,7 +140,6 @@ public class FamilyAlertFragment extends Fragment {
         DatabaseReference usersDbRef = FirebaseDatabase.getInstance().getReference("Users");
         String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        // Use real-time listener so it always shows latest
         alertsDbRef.child(familyUid).addValueEventListener(new ValueEventListener() {
             @SuppressLint("NotifyDataSetChanged")
             @Override
@@ -143,32 +147,51 @@ public class FamilyAlertFragment extends Fragment {
                 alertList.clear();
                 if (!snapshot.exists()) {
                     alertsAdapter.notifyDataSetChanged();
-                    textNoAlerts.setVisibility(View.VISIBLE);
+                    toggleEmptyView();
                     return;
                 }
+
                 List<Alert> tempAlerts = new ArrayList<>();
                 List<DataSnapshot> allAlertSnaps = new ArrayList<>();
                 for (DataSnapshot alertSnap : snapshot.getChildren()) {
                     allAlertSnaps.add(alertSnap);
                 }
+
                 final int[] completed = {0};
                 if (allAlertSnaps.isEmpty()) {
                     alertsAdapter.notifyDataSetChanged();
-                    textNoAlerts.setVisibility(View.VISIBLE);
+                    toggleEmptyView();
                     return;
                 }
+
                 for (DataSnapshot alertSnap : allAlertSnaps) {
                     Alert alert = alertSnap.getValue(Alert.class);
                     if (alert == null) {
                         completed[0]++;
                         continue;
                     }
-                    alert.setId(alertSnap.getKey()); // Make sure Alert model has .setId()
+
+                    alert.setId(alertSnap.getKey());
                     String alertRiderUid = alert.getRiderUid();
                     if (alertRiderUid == null || !riderUids.contains(alertRiderUid)) {
                         completed[0]++;
                         continue;
                     }
+
+                    // Format readable time
+                    try {
+                        SimpleDateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                        Date parsed = originalFormat.parse(alert.getTime());
+                        if (parsed != null) {
+                            SimpleDateFormat displayFormat = new SimpleDateFormat("d MMM yyyy, hh:mm a", Locale.getDefault());
+                            alert.setFormattedTime(displayFormat.format(parsed));
+                        } else {
+                            alert.setFormattedTime(alert.getTime());
+                        }
+                    } catch (ParseException e) {
+                        alert.setFormattedTime(alert.getTime());
+                    }
+
                     usersDbRef.child(alertRiderUid).addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot riderSnap) {
@@ -188,17 +211,22 @@ public class FamilyAlertFragment extends Fragment {
                                 alertList.clear();
                                 alertList.addAll(tempAlerts);
                                 alertsAdapter.notifyDataSetChanged();
-                                textNoAlerts.setVisibility(alertList.isEmpty() ? View.VISIBLE : View.GONE);
+                                toggleEmptyView();
                             }
                         }
-                        @Override public void onCancelled(@NonNull DatabaseError error) { completed[0]++; }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            completed[0]++;
+                            toggleEmptyView();
+                        }
                     });
                 }
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                textNoAlerts.setVisibility(View.VISIBLE);
-                textNoAlerts.setText("Failed to load alerts.");
+                toggleEmptyView();
             }
         });
     }

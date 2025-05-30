@@ -32,6 +32,7 @@ public class SignupActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
+        // 🧾 Initialize views
         nameInput = findViewById(R.id.inputName);
         emailInput = findViewById(R.id.inputEmail);
         phoneInput = findViewById(R.id.inputPhone);
@@ -39,12 +40,14 @@ public class SignupActivity extends AppCompatActivity {
         roleSpinner = findViewById(R.id.spinnerRole);
         signupButton = findViewById(R.id.btnSignup);
 
+        // 🔁 Redirect to login
         TextView textLoginLink = findViewById(R.id.textLoginLink);
         textLoginLink.setOnClickListener(v -> {
             startActivity(new Intent(SignupActivity.this, LoginActivity.class));
             finish();
         });
 
+        // 🎭 Populate spinner with role choices
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
                 this,
                 R.array.roles,
@@ -56,6 +59,7 @@ public class SignupActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance().getReference("Users");
 
+        // 📝 Signup logic
         signupButton.setOnClickListener(v -> {
             String name = nameInput.getText().toString().trim();
             String email = emailInput.getText().toString().trim();
@@ -71,9 +75,6 @@ public class SignupActivity extends AppCompatActivity {
             auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            // User is successfully created
-                            Toast.makeText(SignupActivity.this, "✅ Registered successfully!", Toast.LENGTH_LONG).show();
-
                             FirebaseUser firebaseUser = auth.getCurrentUser();
                             if (firebaseUser != null) {
                                 String userId = firebaseUser.getUid();
@@ -85,15 +86,22 @@ public class SignupActivity extends AppCompatActivity {
                                 userMap.put("role", role);
 
                                 database.child(userId).setValue(userMap)
+                                        .addOnSuccessListener(unused -> {
+                                            Toast.makeText(SignupActivity.this, "✅ Registered successfully!", Toast.LENGTH_LONG).show();
+
+                                            // 👉 Redirect to LoginActivity
+                                            Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                            startActivity(intent);
+                                            finish();
+                                        })
                                         .addOnFailureListener(e -> {
-                                            // Handle failure to save data
                                             Toast.makeText(SignupActivity.this, "❌ Failed to save data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                         });
                             }
                         } else {
-                            // Handle authentication errors
-                            String error = task.getException().getMessage();
-                            if (error != null && error.contains("email address is already in use")) {
+                            String error = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                            if (error.contains("email address is already in use")) {
                                 Toast.makeText(SignupActivity.this, "❗ This email is already registered", Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(SignupActivity.this, "Sign up failed: " + error, Toast.LENGTH_LONG).show();

@@ -13,16 +13,18 @@ import com.example.helmethero.adapters.FamilyDashboardAdapter;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class FamilyDashboardFragment extends Fragment {
 
     private RecyclerView recyclerRiderDashboard;
-    private TextView textNoRiders;
+    private LinearLayout layoutNoRiders;  // Empty state layout
     private TextView textGreeting, textMotivation;
     private FamilyDashboardAdapter adapter;
     private final List<RiderDashboardData> riderDataList = new ArrayList<>();
     private DatabaseReference databaseRef;
+    private final Map<String, ValueEventListener> activeListeners = new HashMap<>();
 
     @Nullable
     @Override
@@ -30,15 +32,14 @@ public class FamilyDashboardFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_family_dashboard, container, false);
 
-        // NEW: Greeting & motivational text
         textGreeting = view.findViewById(R.id.textGreeting);
         textMotivation = view.findViewById(R.id.textMotivation);
+        layoutNoRiders = view.findViewById(R.id.layoutNoRiders);
+        recyclerRiderDashboard = view.findViewById(R.id.recyclerRiderDashboard);
 
-        // Set default values first
         textGreeting.setText("Welcome 👋");
         textMotivation.setText("Monitor your riders' safety in real-time below.");
 
-        // Fetch family user's name for greeting
         String userUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userUid);
         userRef.child("name").addListenerForSingleValueEvent(new ValueEventListener() {
@@ -53,9 +54,6 @@ public class FamilyDashboardFragment extends Fragment {
                 textGreeting.setText("Welcome 👋");
             }
         });
-
-        recyclerRiderDashboard = view.findViewById(R.id.recyclerRiderDashboard);
-        textNoRiders = view.findViewById(R.id.textNoRiders);
 
         recyclerRiderDashboard.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new FamilyDashboardAdapter(riderDataList, getContext());
@@ -107,10 +105,11 @@ public class FamilyDashboardFragment extends Fragment {
         });
 
         fetchAllLinkedRiders();
+        toggleEmptyState(); // Initial check
+
         return view;
     }
 
-    // Time-based greeting helper
     private String getGreeting() {
         Calendar c = Calendar.getInstance();
         int hour = c.get(Calendar.HOUR_OF_DAY);
@@ -119,7 +118,6 @@ public class FamilyDashboardFragment extends Fragment {
         else return "Good evening";
     }
 
-    // === NEW: Only show riders who have this familyUid as emergency contact ===
     private void fetchAllLinkedRiders() {
         String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         databaseRef = FirebaseDatabase.getInstance().getReference();
@@ -135,38 +133,43 @@ public class FamilyDashboardFragment extends Fragment {
                         linkedRiderUids.add(riderSnap.getKey());
                     }
                 }
-                fetchRiderData(linkedRiderUids);
+                subscribeToRiderData(linkedRiderUids);
             }
             @Override public void onCancelled(@NonNull DatabaseError error) { }
         });
     }
 
-    private void fetchRiderData(List<String> riderUids) {
+    private void subscribeToRiderData(List<String> riderUids) {
         riderDataList.clear();
         adapter.notifyDataSetChanged();
+        toggleEmptyState();
+
         if (riderUids.isEmpty()) {
-            textNoRiders.setVisibility(View.VISIBLE);
             return;
-        } else {
-            textNoRiders.setVisibility(View.GONE);
         }
 
         for (String riderUid : riderUids) {
-            // Fetch user, liveTracking, and last trip
-            databaseRef.child("Users").child(riderUid)
-                    .addListenerForSingleValueEvent(new ValueEventListener() {
+            // MAIN FIX: Use .exists() checks EVERYWHERE!
+            ValueEventListener listener = databaseRef.child("Users").child(riderUid)
+                    .addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot userSnap) {
-                            String riderName = userSnap.child("name").getValue(String.class);
-                            String profileUrl = userSnap.child("profileImageUrl").getValue(String.class);
+                            String riderName = userSnap.child("name").exists() ?
+                                    userSnap.child("name").getValue(String.class) : "Unknown";
+                            String profileUrl = userSnap.child("profileImageUrl").exists() ?
+                                    userSnap.child("profileImageUrl").getValue(String.class) : null;
 
                             databaseRef.child("Riders").child(riderUid).child("liveTracking")
-                                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                                    .addValueEventListener(new ValueEventListener() {
                                         @Override
                                         public void onDataChange(@NonNull DataSnapshot liveSnap) {
-                                            boolean isActive = liveSnap.child("tripActive").getValue(Boolean.class) != null
-                                                    && liveSnap.child("tripActive").getValue(Boolean.class);
+                                            boolean isActive = false;
+                                            if (liveSnap.exists() && liveSnap.child("tripActive").exists()) {
+                                                Boolean trip = liveSnap.child("tripActive").getValue(Boolean.class);
+                                                isActive = trip != null && trip;
+                                            }
 
+                                            boolean finalIsActive = isActive;
                                             databaseRef.child("Trips").child(riderUid)
                                                     .orderByChild("timestamp").limitToLast(1)
                                                     .addListenerForSingleValueEvent(new ValueEventListener() {
@@ -174,22 +177,43 @@ public class FamilyDashboardFragment extends Fragment {
                                                         public void onDataChange(@NonNull DataSnapshot tripSnap) {
                                                             String lastTripSummary = "No trip yet";
                                                             for (DataSnapshot snap : tripSnap.getChildren()) {
-                                                                String ts = snap.child("timestamp").getValue(String.class);
-                                                                String distance = snap.child("distance").getValue(String.class);
-                                                                String duration = snap.child("duration").getValue(String.class);
-                                                                lastTripSummary = "Last trip: " + (ts != null ? ts : "-")
-                                                                        + " • " + (distance != null ? distance : "-")
-                                                                        + " • " + (duration != null ? duration : "-");
+                                                                String ts = snap.child("timestamp").exists() ?
+                                                                        snap.child("timestamp").getValue(String.class) : null;
+                                                                String distance = snap.child("distance").exists() ?
+                                                                        snap.child("distance").getValue(String.class) : null;
+                                                                String duration = snap.child("duration").exists() ?
+                                                                        snap.child("duration").getValue(String.class) : null;
+
+                                                                String formattedDate = formatToTarikh(ts);
+                                                                String formattedTime = formatToMasaAMPM(ts);
+
+                                                                lastTripSummary = "Last trip: " + formattedDate + " at " + formattedTime
+                                                                        + "\nDistance: " + (distance != null ? distance : "-")
+                                                                        + "\nDuration: " + (duration != null ? duration : "-");
                                                             }
 
-                                                            RiderDashboardData data = new RiderDashboardData();
-                                                            data.riderUid = riderUid;
-                                                            data.name = riderName;
-                                                            data.profileImageUrl = profileUrl;
-                                                            data.activeRide = isActive;
-                                                            data.lastTripSummary = lastTripSummary;
-                                                            riderDataList.add(data);
+                                                            boolean exists = false;
+                                                            for (RiderDashboardData data : riderDataList) {
+                                                                if (data.riderUid.equals(riderUid)) {
+                                                                    data.name = riderName;
+                                                                    data.profileImageUrl = profileUrl;
+                                                                    data.activeRide = finalIsActive;
+                                                                    data.lastTripSummary = lastTripSummary;
+                                                                    exists = true;
+                                                                    break;
+                                                                }
+                                                            }
+                                                            if (!exists) {
+                                                                RiderDashboardData data = new RiderDashboardData();
+                                                                data.riderUid = riderUid;
+                                                                data.name = riderName;
+                                                                data.profileImageUrl = profileUrl;
+                                                                data.activeRide = finalIsActive;
+                                                                data.lastTripSummary = lastTripSummary;
+                                                                riderDataList.add(data);
+                                                            }
                                                             adapter.notifyDataSetChanged();
+                                                            toggleEmptyState();
                                                         }
                                                         @Override public void onCancelled(@NonNull DatabaseError error) { }
                                                     });
@@ -199,6 +223,52 @@ public class FamilyDashboardFragment extends Fragment {
                         }
                         @Override public void onCancelled(@NonNull DatabaseError error) { }
                     });
+
+            activeListeners.put(riderUid, listener);
+        }
+    }
+
+    private void toggleEmptyState() {
+        if (layoutNoRiders == null || recyclerRiderDashboard == null) return;
+        if (riderDataList.isEmpty()) {
+            layoutNoRiders.setVisibility(View.VISIBLE);
+            recyclerRiderDashboard.setVisibility(View.GONE);
+        } else {
+            layoutNoRiders.setVisibility(View.GONE);
+            recyclerRiderDashboard.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (databaseRef != null) {
+            for (Map.Entry<String, ValueEventListener> entry : activeListeners.entrySet()) {
+                databaseRef.child("Users").child(entry.getKey()).removeEventListener(entry.getValue());
+            }
+        }
+        activeListeners.clear();
+    }
+
+    private String formatToTarikh(String timestamp) {
+        try {
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat output = new SimpleDateFormat("d MMM yyyy", Locale.getDefault());
+            Date date = input.parse(timestamp);
+            return (date != null) ? output.format(date) : "-";
+        } catch (Exception e) {
+            return "-";
+        }
+    }
+
+    private String formatToMasaAMPM(String timestamp) {
+        try {
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat output = new SimpleDateFormat("h:mm a", Locale.getDefault());
+            Date date = input.parse(timestamp);
+            return (date != null) ? output.format(date) : "-";
+        } catch (Exception e) {
+            return "-";
         }
     }
 }

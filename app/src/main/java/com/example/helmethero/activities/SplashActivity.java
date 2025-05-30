@@ -26,12 +26,27 @@ public class SplashActivity extends AppCompatActivity {
             FirebaseUser user = auth.getCurrentUser();
 
             if (user != null) {
-                // ✅ Check stored role from SharedPreferences
                 SharedPreferences prefs = getSharedPreferences("HelmetHeroPrefs", MODE_PRIVATE);
                 String role = prefs.getString("role", "");
 
                 if (role.equals("Rider")) {
-                    startActivity(new Intent(SplashActivity.this, RiderHomeActivity.class));
+                    // === Check for active trip auto-resume ===
+                    boolean tripActive = prefs.getBoolean("tripActive", false);
+                    long tripStartSystemTime = prefs.getLong("tripStartSystemTime", 0L);
+                    double tripDistance = Double.longBitsToDouble(prefs.getLong("tripDistance", 0L));
+                    String routePointsJson = prefs.getString("routePointsJson", null);
+
+                    Intent intent = new Intent(SplashActivity.this, RiderHomeActivity.class);
+
+                    if (tripActive) {
+                        // Pass auto-resume flags and trip state to RiderHomeActivity
+                        intent.putExtra("resumeTrip", true);
+                        intent.putExtra("tripStartSystemTime", tripStartSystemTime);
+                        intent.putExtra("tripDistance", tripDistance);
+                        intent.putExtra("routePointsJson", routePointsJson);
+                    }
+                    startActivity(intent);
+
                 } else if (role.equals("Family Member")) {
                     startActivity(new Intent(SplashActivity.this, FamilyHomeActivity.class));
                 } else {

@@ -44,8 +44,8 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
     public void onBindViewHolder(@NonNull AlertViewHolder holder, int position) {
         Alert alert = alertList.get(position);
 
-        // Rider name & profile image
         holder.textRiderName.setText(alert.getRiderName() != null ? alert.getRiderName() : "Unknown Rider");
+
         String imageUrl = alert.getProfileImageUrl();
         if (imageUrl != null && !imageUrl.isEmpty()) {
             Glide.with(holder.itemView.getContext())
@@ -58,7 +58,6 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
             holder.imgProfile.setImageResource(R.drawable.ic_profile);
         }
 
-        // Alert type badge
         holder.textAlertType.setText(alert.getType() != null ? alert.getType().toUpperCase() : "-");
         if ("IMPACT".equalsIgnoreCase(alert.getType()) || "SOS".equalsIgnoreCase(alert.getType())) {
             holder.textAlertType.setBackgroundResource(R.drawable.bg_alert_type_badge);
@@ -66,15 +65,14 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
             holder.textAlertType.setBackgroundResource(R.drawable.bg_status_badge);
         }
 
-        holder.textAlertTime.setText("Time: " + (alert.getTime() != null ? alert.getTime() : "-"));
+        holder.textAlertTime.setText("Time: " + (alert.getFormattedTime() != null ? alert.getFormattedTime() : "-"));
         holder.textAlertLocation.setText("Location: " + (alert.getLocation() != null ? alert.getLocation() : "-"));
 
-        // Status badge logic
         String status = alert.getStatus() != null ? alert.getStatus().toUpperCase() : "-";
         holder.textAlertStatus.setText(status);
 
         if ("NEW".equalsIgnoreCase(status)) {
-            holder.textAlertStatus.setBackgroundResource(R.drawable.bg_status_badge); // Green
+            holder.textAlertStatus.setBackgroundResource(R.drawable.bg_status_badge);
             holder.textAlertStatus.setOnClickListener(v -> {
                 String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
                 String alertId = alert.getAlertId();
@@ -87,19 +85,20 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
                 alertRef.child("seen").setValue(true);
 
                 alert.setStatus("SEEN");
-                notifyItemChanged(holder.getAdapterPosition());
 
-                // Optional: Disable further clicks
+                int pos = holder.getAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    notifyItemChanged(pos);
+                }
+
                 holder.textAlertStatus.setOnClickListener(null);
-
                 Toast.makeText(holder.itemView.getContext(), "Alert seen.", Toast.LENGTH_SHORT).show();
             });
         } else {
-            holder.textAlertStatus.setBackgroundColor(Color.parseColor("#AAB2B5")); // Grey for seen
-            holder.textAlertStatus.setOnClickListener(null); // Disable click
+            holder.textAlertStatus.setBackgroundColor(Color.parseColor("#AAB2B5"));
+            holder.textAlertStatus.setOnClickListener(null);
         }
 
-        // === FEATURE: Klik satu alert card navigate ke lokasi Google Maps ===
         holder.itemView.setOnClickListener(v -> {
             String locationStr = alert.getLocation();
             if (locationStr != null && locationStr.contains(",")) {
@@ -114,7 +113,6 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
                     if (intent.resolveActivity(v.getContext().getPackageManager()) != null) {
                         v.getContext().startActivity(intent);
                     } else {
-                        // fallback jika tiada Google Maps
                         String webUri = "https://maps.google.com/?q=" + lat + "," + lng;
                         Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUri));
                         v.getContext().startActivity(webIntent);
@@ -134,7 +132,6 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
     }
 
     public static class AlertViewHolder extends RecyclerView.ViewHolder {
-
         ImageView imgProfile;
         TextView textRiderName, textAlertType, textAlertTime, textAlertLocation, textAlertStatus;
 

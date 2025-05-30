@@ -39,6 +39,8 @@ public class EmergencyContactAdapter extends RecyclerView.Adapter<EmergencyConta
     public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
         User user = contacts.get(position);
         holder.nameText.setText(user.getName());
+        holder.emailText.setText(user.getEmail() != null ? user.getEmail() : "Email not available");
+        holder.phoneText.setText(user.getPhone() != null ? user.getPhone() : "Phone not available");
 
         // Load profile image using Glide
         Glide.with(holder.itemView.getContext())
@@ -66,13 +68,15 @@ public class EmergencyContactAdapter extends RecyclerView.Adapter<EmergencyConta
     }
 
     static class ContactViewHolder extends RecyclerView.ViewHolder {
-        TextView nameText;
+        TextView nameText, emailText, phoneText;
         CheckBox checkBox;
         ImageView avatarImage;
 
         public ContactViewHolder(@NonNull View itemView) {
             super(itemView);
             nameText = itemView.findViewById(R.id.contactName);
+            emailText = itemView.findViewById(R.id.contactEmail);
+            phoneText = itemView.findViewById(R.id.contactPhone);
             checkBox = itemView.findViewById(R.id.contactCheckbox);
             avatarImage = itemView.findViewById(R.id.avatarImage);
         }

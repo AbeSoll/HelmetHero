@@ -192,16 +192,16 @@ public class FamilyTripListFragment extends Fragment {
                             Trip trip = tripSnap.getValue(Trip.class);
                             if (trip != null) tripList.add(trip);
                         }
+                        // SORT DESCENDING: latest first
+                        Collections.sort(tripList, (t1, t2) -> {
+                            // Assuming you store timestamp as yyyy-MM-dd HH:mm:ss, or use long/int
+                            return t2.getTimestamp().compareTo(t1.getTimestamp());
+                        });
                         tripHistoryAdapter.notifyDataSetChanged();
 
-                        if (tripList.isEmpty()) {
-                            layoutEmptyState.setVisibility(View.VISIBLE);
-                            recyclerFamilyTrips.setVisibility(View.GONE);
-                        } else {
-                            layoutEmptyState.setVisibility(View.GONE);
-                            recyclerFamilyTrips.setVisibility(View.VISIBLE);
-                        }
+                        layoutEmptyState.setVisibility(tripList.isEmpty() ? View.VISIBLE : View.GONE);
                     }
+
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {}
                 });

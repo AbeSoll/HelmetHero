@@ -6,6 +6,7 @@
     android:padding="16dp"
     android:background="#DDE9FF">
 
+    <!-- Title -->
     <TextView
         android:id="@+id/titleAlertPage"
         android:layout_width="match_parent"
@@ -19,20 +20,45 @@
         android:paddingBottom="12dp"
         android:paddingTop="2dp" />
 
-    <TextView
-        android:id="@+id/textNoAlerts"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="No emergency alerts"
-        android:textSize="18sp"
-        android:textColor="#666"
-        android:layout_gravity="center"
-        android:visibility="gone"
-        android:padding="16dp" />
+    <!-- Empty State Layout -->
+    <LinearLayout
+        android:id="@+id/layoutNoAlerts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
 
+        <ImageView
+            android:id="@+id/imgNoAlerts"
+            android:layout_width="130dp"
+            android:layout_height="130dp"
+            android:src="@drawable/ic_no_notifications"
+            android:contentDescription="No Notifications" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No Notifications Alert"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginTop="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="You don’t have any notifications yet"
+            android:textSize="14sp"
+            android:textColor="#777777"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerAlerts"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
+        android:layout_height="match_parent"
+        android:visibility="visible" />
 </LinearLayout>

@@ -1,6 +1,7 @@
 package com.example.helmethero.fragments.family;
 
 import android.animation.ValueAnimator;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorMatrix;
@@ -12,9 +13,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -43,11 +46,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// ... your imports as above ...
 public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap map;
     private ProgressBar progressBarLoading;
+    private CardView statusMessageCard;     // <-- CardView for top message
+    private TextView textStatusMessage;     // <-- Status text at the top
     private FloatingActionButton btnRecenterMap;
     private final Map<String, Marker> riderMarkers = new HashMap<>();
     private final Map<String, Boolean> riderTripActive = new HashMap<>();
@@ -58,8 +62,11 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_family_real_time, container, false);
+
         progressBarLoading = view.findViewById(R.id.progressBarLoading);
         btnRecenterMap = view.findViewById(R.id.btnRecenterMap);
+        statusMessageCard = view.findViewById(R.id.statusMessageCard);    // <-- CardView
+        textStatusMessage = view.findViewById(R.id.textStatusMessage);    // <-- TextView
 
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.familyMap);
@@ -114,6 +121,7 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 progressBarLoading.setVisibility(View.GONE);
+                showStatusMessage("Failed to load riders.");
             }
         });
     }
@@ -123,6 +131,12 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
         riderMarkers.clear();
         riderTripActive.clear();
         lastMarkerPosition.clear();
+
+        if (linkedRiderIds.isEmpty()) {
+            showStatusMessage("No linked riders yet.");
+        } else {
+            hideStatusMessage();
+        }
 
         for (String riderId : linkedRiderIds) {
             listenToRiderLiveTracking(riderId);
@@ -135,25 +149,43 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
         liveRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Always check exists!
+                if (!snapshot.exists() || !snapshot.child("location").exists()) {
+                    showStatusMessage("Waiting for your rider to start trip...");
+                    return;
+                }
+
                 String location = snapshot.child("location").getValue(String.class);
-                Boolean tripActive = snapshot.child("tripActive").getValue(Boolean.class);
-                if (tripActive == null) tripActive = false;
+                Boolean tripActive = snapshot.child("tripActive").exists()
+                        ? snapshot.child("tripActive").getValue(Boolean.class)
+                        : false;
+
+                if (location == null || !location.contains(",")) {
+                    showStatusMessage("Waiting for location update...");
+                    return;
+                }
+
+                if (tripActive == null || !tripActive) {
+                    showStatusMessage("Rider is not currently on a trip.");
+                } else {
+                    hideStatusMessage();
+                }
 
                 double lat = 0, lng = 0;
-                if (location != null && location.contains(",")) {
-                    String[] locParts = location.split(",");
-                    try {
-                        lat = Double.parseDouble(locParts[0]);
-                        lng = Double.parseDouble(locParts[1]);
-                    } catch (Exception ignored) {}
-                }
+                String[] locParts = location.split(",");
+                try {
+                    lat = Double.parseDouble(locParts[0]);
+                    lng = Double.parseDouble(locParts[1]);
+                } catch (Exception ignored) {}
                 LatLng pos = new LatLng(lat, lng);
-                riderTripActive.put(riderId, tripActive);
+                riderTripActive.put(riderId, tripActive != null && tripActive);
 
-                setCustomProfileMarker(riderId, pos, tripActive);
+                setCustomProfileMarker(riderId, pos, tripActive != null && tripActive);
             }
             @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
+            public void onCancelled(@NonNull DatabaseError error) {
+                showStatusMessage("Failed to load live tracking data.");
+            }
         });
     }
 
@@ -162,9 +194,13 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String profileUrl = snapshot.child("profileImageUrl").getValue(String.class);
+                Context context = getContext();
+                if (context == null || !isAdded()) return;
 
-                View markerView = LayoutInflater.from(getContext()).inflate(
+                String profileUrl = snapshot.child("profileImageUrl").exists() ?
+                        snapshot.child("profileImageUrl").getValue(String.class) : null;
+
+                View markerView = LayoutInflater.from(context).inflate(
                         tripActive ? R.layout.marker_profile_active : R.layout.marker_profile_inactive, null);
 
                 ImageView imgProfile = markerView.findViewById(R.id.imgProfileMarker);
@@ -180,10 +216,9 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
                                 @Override
                                 public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
                                     if (!tripActive) {
-                                        // Make profile grayscale for inactive
-                                        android.graphics.ColorMatrix matrix = new android.graphics.ColorMatrix();
+                                        ColorMatrix matrix = new ColorMatrix();
                                         matrix.setSaturation(0);
-                                        imgProfile.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+                                        imgProfile.setColorFilter(new ColorMatrixColorFilter(matrix));
                                     }
                                     imgProfile.setImageBitmap(resource);
                                     Bitmap markerBitmap = createBitmapFromView(markerView);
@@ -195,9 +230,9 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
                 } else {
                     imgProfile.setImageResource(R.drawable.ic_profile);
                     if (!tripActive) {
-                        android.graphics.ColorMatrix matrix = new android.graphics.ColorMatrix();
+                        ColorMatrix matrix = new ColorMatrix();
                         matrix.setSaturation(0);
-                        imgProfile.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+                        imgProfile.setColorFilter(new ColorMatrixColorFilter(matrix));
                     }
                     Bitmap markerBitmap = createBitmapFromView(markerView);
                     animateOrUpdateMarker(riderId, pos, markerBitmap);
@@ -231,10 +266,9 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
             riderMarkers.put(riderId, marker);
             lastMarkerPosition.put(riderId, newPos);
         } else if (marker != null && lastPos != null) {
-            // Animate marker
-            android.animation.ValueAnimator latLngAnimator = android.animation.ValueAnimator.ofFloat(0, 1);
+            ValueAnimator latLngAnimator = ValueAnimator.ofFloat(0, 1);
             LatLng start = lastPos, end = newPos;
-            latLngAnimator.setDuration(600); // 0.6s animation
+            latLngAnimator.setDuration(600);
             Marker finalMarker = marker;
             latLngAnimator.addUpdateListener(animation -> {
                 float v = (float) animation.getAnimatedValue();
@@ -260,6 +294,20 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
             }
             int padding = 150;
             map.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), padding));
+        }
+    }
+
+    // --- UI FEEDBACK HELPERS ---
+    private void showStatusMessage(String message) {
+        if (statusMessageCard != null && textStatusMessage != null) {
+            statusMessageCard.setVisibility(View.VISIBLE);
+            textStatusMessage.setText(message);
+        }
+    }
+
+    private void hideStatusMessage() {
+        if (statusMessageCard != null) {
+            statusMessageCard.setVisibility(View.GONE);
         }
     }
 }

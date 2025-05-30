@@ -71,11 +71,14 @@ public class RiderEmergencyContactFragment extends Fragment {
                 for (DataSnapshot userSnap : snapshot.getChildren()) {
                     String uid = userSnap.getKey();
                     String name = userSnap.child("name").getValue(String.class);
+                    String email = userSnap.child("email").getValue(String.class);
+                    String phone = userSnap.child("phone").getValue(String.class); // or "phoneNumber" if that's the key
                     String profileImageUrl = userSnap.child("profileImageUrl").getValue(String.class);
-                    contactList.add(new User(uid, name, profileImageUrl));
+
+                    contactList.add(new User(uid, name, email, phone, profileImageUrl));
                 }
 
-                // Restore selection
+                // Restore previously selected contacts
                 riderRef.get().addOnSuccessListener(dataSnapshot -> {
                     selectedIds.clear();
                     previousSelectedIds.clear();
@@ -94,13 +97,9 @@ public class RiderEmergencyContactFragment extends Fragment {
         });
     }
 
-    private void saveSelectedContacts() {
-        if (selectedIds.isEmpty()) {
-            Toast.makeText(getContext(), "Please select at least one contact", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-        // ONLY update /Riders/{uid}/emergencyContacts
+    private void saveSelectedContacts() {
+        // Allow saving even if no family is selected (unlink all)
         HashMap<String, Boolean> map = new HashMap<>();
         for (String contactId : selectedIds) {
             map.put(contactId, true);
@@ -111,7 +110,11 @@ public class RiderEmergencyContactFragment extends Fragment {
                 previousSelectedIds.clear();
                 previousSelectedIds.addAll(selectedIds);
 
-                Toast.makeText(getContext(), "Contacts saved successfully", Toast.LENGTH_SHORT).show();
+                if (selectedIds.isEmpty()) {
+                    Toast.makeText(getContext(), "All family contacts have been unlinked.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Contacts saved successfully", Toast.LENGTH_SHORT).show();
+                }
             } else {
                 Toast.makeText(getContext(), "Failed to save contacts", Toast.LENGTH_SHORT).show();
             }

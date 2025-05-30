@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/helmet_bt_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -7,27 +9,55 @@
     android:padding="24dp"
     android:background="#DDE9FF">
 
+    <!-- 🪖 Helmet Icon -->
     <ImageView
-        android:layout_width="173dp"
-        android:layout_height="173dp"
-        android:layout_marginBottom="16dp"
-        android:src="@drawable/ic_helmet_bt" />
+        android:id="@+id/imgHelmetIcon"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:layout_marginBottom="20dp"
+        android:src="@drawable/ic_helmet_bt"
+        android:contentDescription="Helmet Icon" />
 
-    <TextView
-        android:id="@+id/textHelmetStatus"
+    <!-- 🔄 Helmet Connection Status -->
+    <LinearLayout
+        android:id="@+id/layoutHelmetStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="❌ Helmet Not Connected"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/bg_status_chip"
+        android:padding="10dp">
 
-    <Button
+        <ImageView
+            android:id="@+id/imgHelmetStatus"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_error_red"
+            android:contentDescription="Helmet Status Icon" />
+
+        <TextView
+            android:id="@+id/textHelmetStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Helmet Not Connected"
+            android:textSize="16sp"
+            android:layout_marginStart="8dp"
+            android:textColor="#222222" />
+    </LinearLayout>
+
+    <!-- 🔘 Connect Button -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnConnectHelmet"
+        style="@style/Widget.MaterialComponents.Button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CONNECT HELMET"
-        android:backgroundTint="#1E2D60"
-        android:textColor="@android:color/white" />
+        android:text="Connect Helmet"
+        app:iconPadding="8dp"
+        app:cornerRadius="12dp"
+        app:iconGravity="textStart"
+        android:textSize="16sp"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#1E2D60" />
 
 </LinearLayout>

@@ -186,7 +186,6 @@ public class RiderHistoryFragment extends Fragment {
 
         tripsRef.orderByChild("date").equalTo(dateKey)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @SuppressLint("NotifyDataSetChanged")
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         tripList.clear();
@@ -194,13 +193,19 @@ public class RiderHistoryFragment extends Fragment {
                             Trip trip = tripSnap.getValue(Trip.class);
                             if (trip != null) tripList.add(trip);
                         }
+                        // SORT DESCENDING: latest first
+                        Collections.sort(tripList, (t1, t2) -> {
+                            // Assuming you store timestamp as yyyy-MM-dd HH:mm:ss, or use long/int
+                            return t2.getTimestamp().compareTo(t1.getTimestamp());
+                        });
                         tripHistoryAdapter.notifyDataSetChanged();
 
                         layoutEmptyState.setVisibility(tripList.isEmpty() ? View.VISIBLE : View.GONE);
                     }
 
                     @Override
-                    public void onCancelled(@NonNull DatabaseError error) {}
+                    public void onCancelled(@NonNull DatabaseError error) {
+                    }
                 });
     }
 }

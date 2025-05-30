@@ -33,6 +33,9 @@ public class RiderDetailBottomSheet extends BottomSheetDialogFragment {
     private String riderId;
     private double lat, lng;
 
+    private ValueEventListener liveListener;
+    private DatabaseReference liveRef;
+
     public static RiderDetailBottomSheet newInstance(String riderId, double lat, double lng) {
         RiderDetailBottomSheet fragment = new RiderDetailBottomSheet();
         Bundle args = new Bundle();
@@ -64,10 +67,10 @@ public class RiderDetailBottomSheet extends BottomSheetDialogFragment {
         TextView tvStatus = view.findViewById(R.id.textLiveStatus);
         TextView tvSpeed = view.findViewById(R.id.textLiveSpeed);
         TextView tvLoc = view.findViewById(R.id.textLiveLocation);
-        TextView tvLastUpdate = view.findViewById(R.id.textLastUpdate); // NEW
+        TextView tvLastUpdate = view.findViewById(R.id.textLastUpdate);
         ImageView btnNavigate = view.findViewById(R.id.btnNavigate);
 
-        // Fetch rider details from /Users/{riderId}
+        // Fetch rider details (static, only once)
         DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(riderId);
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @SuppressLint("SetTextI18n")
@@ -89,54 +92,74 @@ public class RiderDetailBottomSheet extends BottomSheetDialogFragment {
                 }
             }
             @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
+            public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // Fetch liveTracking for status, speed, location, and last update
-        DatabaseReference liveRef = FirebaseDatabase.getInstance().getReference("Riders")
+        // Live updates for trip status, speed, location, last update
+        liveRef = FirebaseDatabase.getInstance().getReference("Riders")
                 .child(riderId).child("liveTracking");
-        liveRef.addValueEventListener(new ValueEventListener() {
+        liveListener = new ValueEventListener() {
             @SuppressLint("SetTextI18n")
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                // --- Check for tripActive status ---
                 Boolean tripActive = snapshot.child("tripActive").getValue(Boolean.class);
                 String statusLabel = (tripActive != null && tripActive) ? "ACTIVE RIDE" : "NOT RIDING";
                 tvStatus.setText("Status: " + statusLabel);
 
                 String speed = snapshot.child("speed").getValue(String.class);
                 tvSpeed.setText("Speed: " + (speed != null ? speed : "0.0 km/h"));
-                tvLoc.setText("Location: " + lat + ", " + lng);
 
-                // NEW: Last update (relative time)
+                String liveLocation = snapshot.child("location").getValue(String.class);
+                if (liveLocation != null && liveLocation.contains(",")) {
+                    tvLoc.setText("Location: " + liveLocation);
+                } else {
+                    tvLoc.setText("Location: " + lat + ", " + lng);
+                }
+
                 String lastUpdate = snapshot.child("lastUpdate").getValue(String.class);
                 if (lastUpdate != null && !lastUpdate.isEmpty()) {
-                    String prettyTime = getRelativeTime(lastUpdate);
-                    tvLastUpdate.setText("Last update: " + prettyTime);
+                    String formattedTime = getFormattedRelativeOrExactTime(lastUpdate);
+                    tvLastUpdate.setText("Last update: " + formattedTime);
                 } else {
                     tvLastUpdate.setText("Last update: -");
                 }
             }
             @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
+            public void onCancelled(@NonNull DatabaseError error) {}
+        };
+        liveRef.addValueEventListener(liveListener);
 
         btnNavigate.setOnClickListener(v -> openGoogleMaps(lat, lng));
     }
 
-    // Converts "yyyy-MM-dd HH:mm:ss" to "just now", "3 min ago", "yesterday", etc.
-    private String getRelativeTime(String lastUpdate) {
+    @Override
+    public void onDestroyView() {
+        // Clean up listener to prevent memory leaks
+        if (liveRef != null && liveListener != null) {
+            liveRef.removeEventListener(liveListener);
+        }
+        super.onDestroyView();
+    }
+
+    // Relative time if recent, else formatted date
+    private String getFormattedRelativeOrExactTime(String timestamp) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         try {
-            Date past = sdf.parse(lastUpdate);
+            Date past = sdf.parse(timestamp);
             if (past == null) return "-";
+
             long now = System.currentTimeMillis();
             long pastMillis = past.getTime();
-            // Android built-in utility for relative time:
-            return DateUtils.getRelativeTimeSpanString(
-                    pastMillis, now, DateUtils.MINUTE_IN_MILLIS,
-                    DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_TIME
-            ).toString();
+            long diff = now - pastMillis;
+
+            if (diff < DateUtils.DAY_IN_MILLIS) {
+                return DateUtils.getRelativeTimeSpanString(
+                        pastMillis, now, DateUtils.MINUTE_IN_MILLIS
+                ).toString();
+            } else {
+                SimpleDateFormat exactFormat = new SimpleDateFormat("d MMM yyyy, h:mm a", Locale.getDefault());
+                return exactFormat.format(past);
+            }
         } catch (ParseException e) {
             return "-";
         }

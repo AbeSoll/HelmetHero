@@ -30,4 +30,5 @@
     <item name="textLiveLocation" type="id" />
     <item name="riderInfoCard" type="id" />
     <item name="btnNavigate" type="id" />
+    <item name="textTripTime" type="id" />
 </resources>

@@ -13,6 +13,9 @@ public class Alert implements Serializable {
     private String status;
     private boolean seen;
 
+    // New field for formatted display
+    private String formattedTime;
+
     // === Constructors ===
     public Alert() {
         // Default constructor required for Firebase
@@ -62,4 +65,8 @@ public class Alert implements Serializable {
 
     public boolean isSeen() { return seen; }
     public void setSeen(boolean seen) { this.seen = seen; }
+
+    // === New Getter and Setter for formattedTime ===
+    public String getFormattedTime() { return formattedTime; }
+    public void setFormattedTime(String formattedTime) { this.formattedTime = formattedTime; }
 }

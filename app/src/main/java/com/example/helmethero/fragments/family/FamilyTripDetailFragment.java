@@ -15,6 +15,8 @@ import com.google.android.gms.maps.model.*;
 import com.google.firebase.database.*;
 
 import java.io.Serializable;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCallback {
@@ -32,7 +34,6 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rider_trip_detail, container, false);
 
-        // Bind views
         tripDate = view.findViewById(R.id.tripDate);
         tripDurationValue = view.findViewById(R.id.tripDurationValue);
         tripDistanceValue = view.findViewById(R.id.tripDistanceValue);
@@ -44,7 +45,6 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
         tagWeather = view.findViewById(R.id.tag_weather);
         tagHelmet = view.findViewById(R.id.tag_helmet);
 
-        // Disable editing for view-only
         editTripNote.setEnabled(false);
         for (int i = 0; i < radioMoodGroup.getChildCount(); i++) {
             radioMoodGroup.getChildAt(i).setEnabled(false);
@@ -53,7 +53,6 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
         tagWeather.setEnabled(false);
         tagHelmet.setEnabled(false);
 
-        // Hide save and delete if using same layout
         Button btnSaveNote = view.findViewById(R.id.btnSaveNote);
         Button btnDeleteTrip = view.findViewById(R.id.btnDeleteTrip);
         if (btnSaveNote != null) btnSaveNote.setVisibility(View.GONE);
@@ -62,25 +61,33 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
         ImageView btnBack = view.findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
 
-        // Map init
         SupportMapFragment mapFragment = (SupportMapFragment)
                 getChildFragmentManager().findFragmentById(R.id.routeMap);
         if (mapFragment != null) mapFragment.getMapAsync(this);
 
-        // Get trip data
         if (getArguments() != null) {
             trip = (Trip) getArguments().getSerializable("trip");
-            String riderUid;
-            getArguments().getString("riderUid", "");
+            String riderUid = getArguments().getString("riderUid", "");
             if (trip != null) {
-                tripDate.setText(trip.getTimestamp());
+                // === FORMAT TARIKH ===
+                String formattedDate = trip.getTimestamp(); // fallback
+                try {
+                    SimpleDateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                    Date parsedDate = originalFormat.parse(trip.getTimestamp());
+                    if (parsedDate != null) {
+                        SimpleDateFormat displayFormat = new SimpleDateFormat("d MMM yyyy", Locale.getDefault());
+                        formattedDate = displayFormat.format(parsedDate);
+                    }
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                tripDate.setText("Date: " + formattedDate);
+
                 tripDurationValue.setText("Duration: " + trip.getDuration());
                 tripDistanceValue.setText("Distance: " + trip.getDistance());
                 tripAvgSpeedValue.setText("Average Speed: " + trip.getAvgSpeed());
 
-                // Note: Must pass in the rider UID from parent fragment!
-                riderUid = getArguments().getString("riderUid", "");
-                DatabaseReference tripRef = com.google.firebase.database.FirebaseDatabase.getInstance()
+                DatabaseReference tripRef = FirebaseDatabase.getInstance()
                         .getReference("Trips")
                         .child(riderUid)
                         .child(trip.getTripId());
@@ -89,35 +96,23 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (snapshot.exists()) {
-                            // Mood
                             String mood = snapshot.child("mood").getValue(String.class);
                             if (mood != null) {
                                 switch (mood) {
-                                    case "😄":
-                                        radioMoodGroup.check(R.id.mood_happy);
-                                        break;
-                                    case "😌":
-                                        radioMoodGroup.check(R.id.mood_calm);
-                                        break;
-                                    case "😰":
-                                        radioMoodGroup.check(R.id.mood_stressed);
-                                        break;
-                                    case "⚠️":
-                                        radioMoodGroup.check(R.id.mood_alert);
-                                        break;
+                                    case "😄": radioMoodGroup.check(R.id.mood_happy); break;
+                                    case "😌": radioMoodGroup.check(R.id.mood_calm); break;
+                                    case "😰": radioMoodGroup.check(R.id.mood_stressed); break;
+                                    case "⚠️": radioMoodGroup.check(R.id.mood_alert); break;
                                 }
                             }
-                            // Tags
                             for (DataSnapshot tagSnap : snapshot.child("tags").getChildren()) {
                                 String tag = tagSnap.getValue(String.class);
                                 if (tag != null) {
                                     if (tag.equals("Heavy Traffic")) tagTraffic.setChecked(true);
-                                    if (tag.equals("Rainy/ Slippery Road"))
-                                        tagWeather.setChecked(true);
+                                    if (tag.equals("Rainy/ Slippery Road")) tagWeather.setChecked(true);
                                     if (tag.equals("Helmet Helped")) tagHelmet.setChecked(true);
                                 }
                             }
-                            // Note text
                             String noteText = snapshot.child("text").getValue(String.class);
                             editTripNote.setText(noteText);
                         }
@@ -138,7 +133,7 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
 
         if (trip != null) {
             String riderUid = getArguments().getString("riderUid", "");
-            DatabaseReference pathRef = com.google.firebase.database.FirebaseDatabase.getInstance()
+            DatabaseReference pathRef = FirebaseDatabase.getInstance()
                     .getReference("Trips")
                     .child(riderUid)
                     .child(trip.getTripId())
@@ -173,7 +168,6 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
         }
     }
 
-    // Factory method to pass trip + riderUid from parent fragment
     public static FamilyTripDetailFragment newInstance(Object trip, String riderUid) {
         FamilyTripDetailFragment fragment = new FamilyTripDetailFragment();
         Bundle args = new Bundle();

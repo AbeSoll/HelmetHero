@@ -11,11 +11,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.helmethero.R;
 import com.example.helmethero.models.Trip;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class TripHistoryAdapter extends RecyclerView.Adapter<TripHistoryAdapter.TripViewHolder> {
 
-    // Click listener for detail navigation
     public interface OnTripClickListener {
         void onTripClick(Trip trip);
     }
@@ -23,7 +25,6 @@ public class TripHistoryAdapter extends RecyclerView.Adapter<TripHistoryAdapter.
     private final List<Trip> tripList;
     private final OnTripClickListener clickListener;
 
-    // Use this constructor for all usages (Rider, Family, etc.)
     public TripHistoryAdapter(List<Trip> tripList, OnTripClickListener clickListener) {
         this.tripList = tripList;
         this.clickListener = clickListener;
@@ -41,10 +42,13 @@ public class TripHistoryAdapter extends RecyclerView.Adapter<TripHistoryAdapter.
     public void onBindViewHolder(@NonNull TripViewHolder holder, int position) {
         Trip trip = tripList.get(position);
 
-        holder.dateText.setText(trip.getTimestamp());
-        holder.durationText.setText("Duration • " + trip.getDuration());
-        holder.distanceText.setText("Distance • " + trip.getDistance());
-        holder.avgSpeedText.setText("Avg Speed • " + trip.getAvgSpeed());
+        String formattedDate = formatDate(trip.getTimestamp());
+        String formattedTime = formatTime(trip.getTimestamp());
+
+        holder.dateText.setText("" + formattedDate + "   |   " + formattedTime);
+        holder.durationText.setText("Duration: " + trip.getDuration());
+        holder.distanceText.setText("Distance: " + trip.getDistance());
+        holder.avgSpeedText.setText("Avg Speed: " + trip.getAvgSpeed());
         holder.statusText.setText(trip.getStatus() != null ? trip.getStatus() : "-");
 
         holder.itemView.setOnClickListener(v -> {
@@ -67,6 +71,30 @@ public class TripHistoryAdapter extends RecyclerView.Adapter<TripHistoryAdapter.
             distanceText = itemView.findViewById(R.id.textTripDistance);
             avgSpeedText = itemView.findViewById(R.id.textTripAvgSpeed);
             statusText = itemView.findViewById(R.id.textTripStatus);
+        }
+    }
+
+    // Formatter for "1 Jan 2025"
+    private String formatDate(String timestamp) {
+        try {
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat output = new SimpleDateFormat("d MMM yyyy", Locale.getDefault());
+            Date date = input.parse(timestamp);
+            return (date != null) ? output.format(date) : "-";
+        } catch (Exception e) {
+            return "-";
+        }
+    }
+
+    // Formatter for "3:45 PM"
+    private String formatTime(String timestamp) {
+        try {
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat output = new SimpleDateFormat("h:mm a", Locale.getDefault());
+            Date date = input.parse(timestamp);
+            return (date != null) ? output.format(date) : "-";
+        } catch (Exception e) {
+            return "-";
         }
     }
 }

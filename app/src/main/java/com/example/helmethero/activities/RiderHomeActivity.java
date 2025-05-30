@@ -18,21 +18,21 @@ import com.example.helmethero.fragments.rider.RiderHelmetFragment;
 import com.example.helmethero.fragments.rider.RiderHistoryFragment;
 import com.example.helmethero.fragments.rider.RiderSettingsFragment;
 import com.example.helmethero.fragments.rider.RiderStartTripFragment;
+import com.example.helmethero.fragments.rider.RiderTripFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
-
-import java.util.Objects;
 
 public class RiderHomeActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNav;
 
-    // Fragment tags (optional)
+    // Fragment tags
     private static final String TAG_START_TRIP = "RiderStartTripFragment";
     private static final String TAG_HELMET = "RiderHelmetFragment";
     private static final String TAG_HISTORY = "RiderHistoryFragment";
     private static final String TAG_CONTACTS = "RiderEmergencyContactFragment";
     private static final String TAG_SETTINGS = "RiderSettingsFragment";
+    private static final String TAG_TRIP = "RiderTripFragment";
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -42,11 +42,8 @@ public class RiderHomeActivity extends AppCompatActivity {
 
         // Setup Toolbar as ActionBar
         Toolbar toolbar = findViewById(R.id.top_toolbar);
-        // ❌ Jangan gunakan setSupportActionBar(toolbar);
-
-        // Optional: Kalau nak guna findViewById untuk ubah title/logo nanti
         TextView title = toolbar.findViewById(R.id.toolbar_title);
-        title.setText("Helmet Hero"); // kalau nak ubah dinamik
+        title.setText("Helmet Hero");
 
         // Initialize Bottom Navigation
         bottomNav = findViewById(R.id.bottom_navigation);
@@ -75,7 +72,7 @@ public class RiderHomeActivity extends AppCompatActivity {
                     selectedFragment = new RiderSettingsFragment();
                     tag = TAG_SETTINGS;
                 } else {
-                    return false; // Handle unknown item
+                    return false;
                 }
 
                 if (selectedFragment != null) {
@@ -90,17 +87,52 @@ public class RiderHomeActivity extends AppCompatActivity {
             }
         });
 
-        // Load default fragment
+        // ==== AUTO-RESUME TRIP FEATURE ====
+        boolean resumeTrip = getIntent().getBooleanExtra("resumeTrip", false);
+        long tripStartSystemTime = getIntent().getLongExtra("tripStartSystemTime", 0L);
+        double tripDistance = getIntent().getDoubleExtra("tripDistance", 0.0);
+        String routePointsJson = getIntent().getStringExtra("routePointsJson");
+
         if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .setReorderingAllowed(true)
-                    .replace(R.id.fragment_container, new RiderStartTripFragment(), TAG_START_TRIP)
-                    .commit();
+            if (resumeTrip) {
+                // Pass semua state ke RiderTripFragment
+                Bundle args = new Bundle();
+                args.putBoolean("resumeTrip", true);
+                args.putLong("tripStartSystemTime", tripStartSystemTime);
+                args.putDouble("tripDistance", tripDistance);
+                args.putString("routePointsJson", routePointsJson);
+
+                RiderTripFragment riderTripFragment = new RiderTripFragment();
+                riderTripFragment.setArguments(args);
+
+                getSupportFragmentManager().beginTransaction()
+                        .setReorderingAllowed(true)
+                        .replace(R.id.fragment_container, riderTripFragment, TAG_TRIP)
+                        .commit();
+
+                // Set bottom nav highlight ke Home (atau disable highlight)
+                setBottomNavSelected(R.id.nav_home); // optional, sebab trip fragment tak ada tab sendiri
+            } else {
+                // Default: buka home start trip
+                getSupportFragmentManager().beginTransaction()
+                        .setReorderingAllowed(true)
+                        .replace(R.id.fragment_container, new RiderStartTripFragment(), TAG_START_TRIP)
+                        .commit();
+            }
         }
     }
+
+    // Untuk sembunyikan/tunjuk bottom nav dari fragment
     public void setBottomNavVisibility(boolean show) {
         if (bottomNav != null) {
             bottomNav.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    // === NEW: Untuk force update selected nav bar icon dari fragment ===
+    public void setBottomNavSelected(int menuItemId) {
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(menuItemId);
         }
     }
 }

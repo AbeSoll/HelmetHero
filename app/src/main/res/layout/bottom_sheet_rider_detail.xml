@@ -12,12 +12,12 @@
     <!-- Profile Image -->
     <ImageView
         android:id="@+id/imgProfilePhoto"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
         android:src="@drawable/ic_profile"
         android:background="@drawable/bg_profile_circle"
         android:scaleType="centerCrop"
-        android:layout_marginRight="18dp" />
+        android:layout_marginEnd="18dp" />
 
     <!-- Rider Info -->
     <LinearLayout
@@ -33,47 +33,49 @@
             android:text="Ahmad Solehin"
             android:textStyle="bold"
             android:textSize="17sp"
-            android:textColor="#1A2333" />
+            android:textColor="#1A2333"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <TextView
             android:id="@+id/textLiveStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Active"
+            android:text="Status: Active"
             android:textColor="#6196D6"
-            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textSize="14sp"
             android:layout_marginTop="3dp" />
 
         <TextView
             android:id="@+id/textLiveSpeed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="000.0 km/h"
+            android:text="Speed: 0.0 km/h"
             android:textColor="#666"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:layout_marginTop="1dp" />
 
         <TextView
             android:id="@+id/textLiveLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="2.16754, 103.1324"
+            android:text="Location: 2.16754, 103.1324"
             android:textColor="#888"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:layout_marginTop="1dp" />
 
-        <!-- NEW: Last update time -->
+        <!-- Last update time -->
         <TextView
             android:id="@+id/textLastUpdate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Last update: -"
             android:textColor="#888"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:layout_marginTop="2dp" />
 
     </LinearLayout>
-
 
     <!-- Navigation Button with Label -->
     <LinearLayout
@@ -97,7 +99,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Navigate"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:textColor="#6196D6"
             android:layout_marginTop="2dp" />
 

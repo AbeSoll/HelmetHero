@@ -4,6 +4,30 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Status message at TOP -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/statusMessageCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:layout_margin="18dp"
+        android:elevation="6dp"
+        android:visibility="gone"
+        app:cardCornerRadius="18dp"
+        app:cardBackgroundColor="@android:color/white">
+
+        <TextView
+            android:id="@+id/textStatusMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Rider is not currently on a trip."
+            android:textColor="#888"
+            android:textSize="17sp"
+            android:gravity="center"
+            android:padding="13dp"
+            android:background="@android:color/white"/>
+    </androidx.cardview.widget.CardView>
+
     <!-- Google Map as background -->
     <fragment
         android:id="@+id/familyMap"
@@ -20,7 +44,7 @@
         android:layout_gravity="center"
         android:visibility="gone" />
 
-    <!-- Re-center map button (bottom left or right as you like) -->
+    <!-- Re-center map button -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnRecenterMap"
         android:layout_width="56dp"

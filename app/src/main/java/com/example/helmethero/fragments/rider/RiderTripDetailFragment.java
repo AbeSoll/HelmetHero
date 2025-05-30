@@ -1,3 +1,4 @@
+// (package, imports tetap sama)
 package com.example.helmethero.fragments.rider;
 
 import android.annotation.SuppressLint;
@@ -17,6 +18,8 @@ import com.google.android.gms.maps.model.*;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallback {
@@ -28,7 +31,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
     private RadioGroup radioMoodGroup;
     private CheckBox tagTraffic, tagWeather, tagHelmet;
 
-    // Factory method to create fragment with trip data
     public static RiderTripDetailFragment newInstance(Trip trip) {
         RiderTripDetailFragment fragment = new RiderTripDetailFragment();
         Bundle args = new Bundle();
@@ -44,7 +46,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rider_trip_detail, container, false);
 
-        // Bind views
         tripDate = view.findViewById(R.id.tripDate);
         tripDurationValue = view.findViewById(R.id.tripDurationValue);
         tripDistanceValue = view.findViewById(R.id.tripDistanceValue);
@@ -59,20 +60,29 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
         Button btnSaveNote = view.findViewById(R.id.btnSaveNote);
         Button btnDeleteTrip = view.findViewById(R.id.btnDeleteTrip);
         ImageView btnBack = view.findViewById(R.id.btnBack);
-
-        // Handle back button
         btnBack.setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
 
-        // Map init
         SupportMapFragment mapFragment = (SupportMapFragment)
                 getChildFragmentManager().findFragmentById(R.id.routeMap);
         if (mapFragment != null) mapFragment.getMapAsync(this);
 
-        // Get trip data
         if (getArguments() != null && getArguments().containsKey("trip")) {
             trip = (Trip) getArguments().getSerializable("trip");
             if (trip != null) {
-                tripDate.setText(trip.getTimestamp());
+                // FORMAT TARIKH
+                String formattedDate = trip.getTimestamp(); // fallback
+                try {
+                    SimpleDateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                    Date parsedDate = originalFormat.parse(trip.getTimestamp());
+                    if (parsedDate != null) {
+                        SimpleDateFormat displayFormat = new SimpleDateFormat("d MMM yyyy", Locale.getDefault());
+                        formattedDate = displayFormat.format(parsedDate);
+                    }
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                tripDate.setText("Date: " + formattedDate);
+
                 tripDurationValue.setText("Duration: " + trip.getDuration());
                 tripDistanceValue.setText("Distance: " + trip.getDistance());
                 tripAvgSpeedValue.setText("Average Speed: " + trip.getAvgSpeed());
@@ -86,7 +96,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (snapshot.exists()) {
-                            // Mood
                             String mood = snapshot.child("mood").getValue(String.class);
                             if (mood != null) {
                                 switch (mood) {
@@ -96,7 +105,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                                     case "⚠️": radioMoodGroup.check(R.id.mood_alert); break;
                                 }
                             }
-                            // Tags
                             for (DataSnapshot tagSnap : snapshot.child("tags").getChildren()) {
                                 String tag = tagSnap.getValue(String.class);
                                 if (tag != null) {
@@ -105,11 +113,11 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                                     if (tag.equals("Helmet Helped")) tagHelmet.setChecked(true);
                                 }
                             }
-                            // Note text
                             String noteText = snapshot.child("text").getValue(String.class);
                             editTripNote.setText(noteText);
                         }
                     }
+
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
                         Toast.makeText(getContext(), "❌ Failed to load trip notes", Toast.LENGTH_SHORT).show();
@@ -122,7 +130,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
             if (trip == null) return;
             String noteText = editTripNote.getText().toString().trim();
 
-            // Get selected mood
             String mood = "";
             int selectedId = radioMoodGroup.getCheckedRadioButtonId();
             if (selectedId != -1) {
@@ -130,7 +137,6 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                 mood = selected.getText().toString();
             }
 
-            // Get selected tags
             List<String> tags = new ArrayList<>();
             if (tagTraffic.isChecked()) tags.add("Heavy Traffic");
             if (tagWeather.isChecked()) tags.add("Rainy/ Slippery Road");

@@ -14,43 +14,52 @@ import com.example.helmethero.utils.BluetoothService;
 
 public class RiderHelmetFragment extends Fragment implements BluetoothService.BluetoothListener {
 
-    private TextView helmetStatusText;
+    private ImageView imgHelmetStatus;
+    private TextView textHelmetStatus;
     private Button connectButton;
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint("NewApi")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rider_helmet, container, false);
 
-        helmetStatusText = view.findViewById(R.id.textHelmetStatus);
+        imgHelmetStatus = view.findViewById(R.id.imgHelmetStatus);
+        textHelmetStatus = view.findViewById(R.id.textHelmetStatus);
         connectButton = view.findViewById(R.id.btnConnectHelmet);
 
-        // Register listener to get callback
         BluetoothService.getInstance().setListener(this);
 
         connectButton.setOnClickListener(v -> {
-            helmetStatusText.setText("⏳ Connecting to helmet...");
+            textHelmetStatus.setText("Connecting...");
+            imgHelmetStatus.setImageResource(R.drawable.ic_loading_spinner); // Optional spinner
+            imgHelmetStatus.setTooltipText("Connecting...");
             BluetoothService.getInstance().connectHelmet();
         });
 
         // Set initial status
-        helmetStatusText.setText(
-                BluetoothService.getInstance().isConnected() ?
-                        "✅ Helmet Connected" :
-                        "❌ Helmet Not Connected"
-        );
+        updateHelmetUI(BluetoothService.getInstance().isConnected());
 
         return view;
     }
 
-    // BluetoothService.BluetoothListener
+    @SuppressLint("NewApi")
+    private void updateHelmetUI(boolean connected) {
+        if (connected) {
+            imgHelmetStatus.setImageResource(R.drawable.ic_success_green);
+            imgHelmetStatus.setTooltipText("Helmet Connected");
+            textHelmetStatus.setText("Helmet Connected");
+        } else {
+            imgHelmetStatus.setImageResource(R.drawable.ic_error_red);
+            imgHelmetStatus.setTooltipText("Helmet Not Connected");
+            textHelmetStatus.setText("Helmet Not Connected");
+        }
+    }
+
     @Override
     public void onStatusChanged(boolean connected) {
-        requireActivity().runOnUiThread(() -> {
-            helmetStatusText.setText(connected ? "✅ Helmet Connected" : "❌ Helmet Not Connected");
-        });
+        requireActivity().runOnUiThread(() -> updateHelmetUI(connected));
     }
 
     @Override
@@ -58,14 +67,11 @@ public class RiderHelmetFragment extends Fragment implements BluetoothService.Bl
         requireActivity().runOnUiThread(() ->
                 Toast.makeText(getContext(), "Helmet Alert: " + message, Toast.LENGTH_SHORT).show()
         );
-
-        // Optional: Call logic to upload alert to Firebase
-        // e.g. handleHelmetAlert(message);
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        BluetoothService.getInstance().setListener(null); // avoid memory leak
+        BluetoothService.getInstance().setListener(null);
     }
 }
