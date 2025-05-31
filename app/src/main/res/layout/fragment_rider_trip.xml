@@ -205,4 +205,26 @@
         android:visibility="gone"
         style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large" />
 
+    <!-- 📍 Recenter MaterialButton (bottom left, not overlapping SOS) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRecenter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="88dp"
+        android:text="Re-center"
+        android:textAllCaps="false"
+        android:textColor="@color/helmet_blue"
+        android:textSize="15sp"
+        app:icon="@drawable/ic_gps_fixed"
+        app:iconTint="@color/helmet_blue"
+        app:iconPadding="8dp"
+        app:iconGravity="textStart"
+        app:cornerRadius="24dp"
+        android:backgroundTint="@android:color/white"
+        android:elevation="4dp"
+        android:visibility="gone"
+        android:contentDescription="Recenter to Current Location" />
+
 </FrameLayout>

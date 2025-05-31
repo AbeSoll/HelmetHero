@@ -210,13 +210,34 @@ public class RiderTripDetailFragment extends Fragment implements OnMapReadyCallb
                     }
 
                     if (!route.isEmpty()) {
+                        // Draw route
                         PolylineOptions polylineOptions = new PolylineOptions()
                                 .addAll(route)
                                 .width(8f)
                                 .color(ContextCompat.getColor(requireContext(), R.color.helmet_blue))
                                 .geodesic(true);
                         map.addPolyline(polylineOptions);
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(route.get(0), 15f));
+
+                        // Start marker
+                        LatLng start = route.get(0);
+                        map.addMarker(new MarkerOptions()
+                                .position(start)
+                                .title("Start")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+                        // End marker
+                        LatLng end = route.get(route.size() - 1);
+                        map.addMarker(new MarkerOptions()
+                                .position(end)
+                                .title("End")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+                        // Camera: fit entire route
+                        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                        for (LatLng point : route) builder.include(point);
+                        LatLngBounds bounds = builder.build();
+                        int padding = 120; // px
+                        map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
                     }
                 }
 

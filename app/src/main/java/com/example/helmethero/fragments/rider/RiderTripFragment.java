@@ -6,6 +6,7 @@ import android.animation.PropertyValuesHolder;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -35,6 +36,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.helmethero.R;
 import com.example.helmethero.activities.RiderHomeActivity;
+import com.example.helmethero.services.LocationForegroundService;
 import com.example.helmethero.utils.HelmetConnectionManager;
 import com.google.android.gms.location.*;
 import com.google.android.gms.maps.*;
@@ -57,11 +59,14 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
     private TextView durationText, distanceText, speedText;
     private TextView helmetStatusText;
+    private View btnRecenter;
 
     private long startTimeMillis;
     private double totalDistanceKm = 0.0;
     private Location lastLocation;
     private final ArrayList<LatLng> routePoints = new ArrayList<>();
+
+    private boolean isFollowingPointer = true;
 
     private final Handler durationHandler = new Handler(Looper.getMainLooper());
     private final Runnable durationRunnable = new Runnable() {
@@ -73,6 +78,7 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     };
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private static final int REQUEST_CODE_FOREGROUND_LOCATION = 2024;
     private String riderUid;
 
     private SharedPreferences prefs;
@@ -99,6 +105,17 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         // Defensive: always init fusedLocationClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
 
+        // Start foreground service for background location tracking (with permission check!)
+        if (Build.VERSION.SDK_INT >= 34) {
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.FOREGROUND_SERVICE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.FOREGROUND_SERVICE_LOCATION}, REQUEST_CODE_FOREGROUND_LOCATION);
+            } else {
+                startForegroundLocationService();
+            }
+        } else {
+            startForegroundLocationService();
+        }
+
         // View bindings
         durationText = view.findViewById(R.id.textDuration);
         distanceText = view.findViewById(R.id.textDistance);
@@ -106,8 +123,20 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         helmetStatusText = view.findViewById(R.id.textHelmetStatus);
         Button endTripButton = view.findViewById(R.id.btnEndTrip);
         Button sosButton = view.findViewById(R.id.btnSos);
+        btnRecenter = view.findViewById(R.id.btnRecenter);
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
         ProgressBar loadingSos = view.findViewById(R.id.loadingSos);
+
+        btnRecenter.setVisibility(View.GONE); // Default: hide
+
+        btnRecenter.setOnClickListener(v -> {
+            if (lastLocation != null && map != null) {
+                isFollowingPointer = true;
+                LatLng latLng = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17f));
+                btnRecenter.setVisibility(View.GONE);
+            }
+        });
 
         // Hide bottom nav when active
         view.post(() -> {
@@ -155,7 +184,7 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
         durationHandler.post(durationRunnable);
 
-        // End Trip Logic
+        // End Trip Logic (STOP service when trip ends)
         endTripButton.setOnClickListener(v -> {
             new AlertDialog.Builder(requireContext())
                     .setTitle("End Trip?")
@@ -166,6 +195,9 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
                         setTripActiveFlag(false);
                         clearTripStatePrefs();
+
+                        // Stop foreground service
+                        requireActivity().stopService(new Intent(requireContext(), LocationForegroundService.class));
 
                         RiderTripSummaryFragment summaryFragment =
                                 RiderTripSummaryFragment.newInstance(duration, totalDistanceKm, avgSpeed, routePoints);
@@ -288,6 +320,16 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         return view;
     }
 
+    // Foreground Location Service launcher
+    private void startForegroundLocationService() {
+        Intent serviceIntent = new Intent(requireContext(), LocationForegroundService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireActivity().startForegroundService(serviceIntent);
+        } else {
+            requireActivity().startService(serviceIntent);
+        }
+    }
+
     // === tripActive flag setter ===
     private void setTripActiveFlag(boolean active) {
         if (riderUid == null) return;
@@ -349,7 +391,6 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            // Optionally, return empty or null
             return "[]";
         }
         return arr.toString();
@@ -367,7 +408,7 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         map.getUiSettings().setZoomControlsEnabled(false);
         map.getUiSettings().setMyLocationButtonEnabled(false);
 
-        // **RE-INIT FUSED LOCATION CLIENT HERE - SOLVES NULL!**
+        // RE-INIT FUSED LOCATION CLIENT HERE - SOLVES NULL!
         if (fusedLocationClient == null) {
             fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
         }
@@ -375,6 +416,15 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         // Set default position to Malaysia
         LatLng malaysiaCenter = new LatLng(3.1390, 101.6869); // Kuala Lumpur
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(malaysiaCenter, 10f));
+
+        // Add recenter logic on user gesture
+        map.setOnCameraMoveStartedListener(reason -> {
+            // Only show recenter button if user gesture, not by code
+            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                isFollowingPointer = false;
+                if (btnRecenter != null) btnRecenter.setVisibility(View.VISIBLE);
+            }
+        });
 
         if (hasLocationPermission()) {
             map.setMyLocationEnabled(true);
@@ -398,6 +448,14 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_CODE_FOREGROUND_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startForegroundLocationService();
+            } else {
+                Toast.makeText(getContext(), "Foreground location permission required!", Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 if (map != null) onMapReady(map);
@@ -408,7 +466,6 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void startLocationUpdates() {
-        // DEFENSIVE: RE-INIT FUSED LOCATION CLIENT IF NULL
         if (fusedLocationClient == null) {
             fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
         }
@@ -451,18 +508,22 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
                 lastLocation = location;
                 LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
                 routePoints.add(point);
-                saveTripStateToPrefs(); // <-- save every point
+                saveTripStateToPrefs();
                 drawRoute();
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
+                if (isFollowingPointer && map != null) {
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
+                }
             }
         }
 
         lastLocation = location;
         LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
         routePoints.add(point);
-        saveTripStateToPrefs(); // <-- save every point
+        saveTripStateToPrefs();
         drawRoute();
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
+        if (isFollowingPointer && map != null) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
+        }
 
         float speedMps = location.hasSpeed() ? location.getSpeed() : 0f;
         float speedKph = speedMps * 3.6f;
@@ -471,19 +532,17 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
         speedText.setText(String.format(Locale.getDefault(), "%.1f km/h", speedKph));
 
-        // === 🚨 PUSH REAL-TIME LOCATION TO FIREBASE FOR FAMILY MONITORING ===
+        // PUSH REAL-TIME LOCATION TO FIREBASE FOR FAMILY MONITORING
         if (riderUid != null) {
             DatabaseReference liveLocRef = FirebaseDatabase.getInstance()
                     .getReference("Riders").child(riderUid).child("liveTracking");
             String locStr = location.getLatitude() + "," + location.getLongitude();
             liveLocRef.child("location").setValue(locStr);
             liveLocRef.child("lastUpdate").setValue(getCurrentTime());
-            // Optionally, push speed for display on Family side
             liveLocRef.child("speed").setValue(String.format(Locale.getDefault(), "%.1f km/h", speedKph));
         }
     }
 
-    // Save distance and routePoints to prefs at each update
     private void saveTripStateToPrefs() {
         prefs.edit()
                 .putLong("tripDistance", Double.doubleToRawLongBits(totalDistanceKm))
@@ -518,6 +577,9 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     public void onDestroyView() {
         super.onDestroyView();
         setTripActiveFlag(false);
+
+        // Stop foreground service if fragment is destroyed (just in case)
+        requireActivity().stopService(new Intent(requireContext(), LocationForegroundService.class));
 
         if (getActivity() instanceof RiderHomeActivity) {
             ((RiderHomeActivity) getActivity()).setBottomNavVisibility(true);

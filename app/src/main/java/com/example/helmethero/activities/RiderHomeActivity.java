@@ -95,7 +95,7 @@ public class RiderHomeActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             if (resumeTrip) {
-                // Pass semua state ke RiderTripFragment
+                // Pass all state to RiderTripFragment
                 Bundle args = new Bundle();
                 args.putBoolean("resumeTrip", true);
                 args.putLong("tripStartSystemTime", tripStartSystemTime);
@@ -110,10 +110,8 @@ public class RiderHomeActivity extends AppCompatActivity {
                         .replace(R.id.fragment_container, riderTripFragment, TAG_TRIP)
                         .commit();
 
-                // Set bottom nav highlight ke Home (atau disable highlight)
-                setBottomNavSelected(R.id.nav_home); // optional, sebab trip fragment tak ada tab sendiri
             } else {
-                // Default: buka home start trip
+                // Default: open start trip home
                 getSupportFragmentManager().beginTransaction()
                         .setReorderingAllowed(true)
                         .replace(R.id.fragment_container, new RiderStartTripFragment(), TAG_START_TRIP)
@@ -122,17 +120,11 @@ public class RiderHomeActivity extends AppCompatActivity {
         }
     }
 
-    // Untuk sembunyikan/tunjuk bottom nav dari fragment
+    // For showing/hiding bottom nav from fragment
     public void setBottomNavVisibility(boolean show) {
         if (bottomNav != null) {
             bottomNav.setVisibility(show ? View.VISIBLE : View.GONE);
         }
     }
 
-    // === NEW: Untuk force update selected nav bar icon dari fragment ===
-    public void setBottomNavSelected(int menuItemId) {
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(menuItemId);
-        }
-    }
 }

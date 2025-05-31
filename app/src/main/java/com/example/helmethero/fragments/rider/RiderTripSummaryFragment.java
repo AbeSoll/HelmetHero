@@ -138,14 +138,34 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
     private void drawRoutePreview() {
         if (googleMap == null || routePoints == null || routePoints.size() < 2) return;
 
+        // Draw route
         PolylineOptions polylineOptions = new PolylineOptions()
                 .addAll(routePoints)
                 .color(requireContext().getColor(R.color.helmet_blue))
                 .width(10f);
 
         googleMap.addPolyline(polylineOptions);
-        LatLng last = routePoints.get(routePoints.size() - 1);
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(last, 16f));
+
+        // Start marker
+        LatLng start = routePoints.get(0);
+        googleMap.addMarker(new MarkerOptions()
+                .position(start)
+                .title("Start")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+        // End marker
+        LatLng end = routePoints.get(routePoints.size() - 1);
+        googleMap.addMarker(new MarkerOptions()
+                .position(end)
+                .title("End")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+        // Camera: fit entire route
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        for (LatLng point : routePoints) builder.include(point);
+        LatLngBounds bounds = builder.build();
+        int padding = 120; // px
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
     }
 
     private void saveTripData() {
@@ -220,11 +240,6 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
 
             ref.child(tripId).setValue(tripData).addOnSuccessListener(task -> {
                 Toast.makeText(getContext(), "✅ Trip saved successfully!", Toast.LENGTH_SHORT).show();
-
-                // === Biar Bottom Nav Sync ke 'History' selepas save trip ===
-                if (getActivity() instanceof RiderHomeActivity) {
-                    ((RiderHomeActivity) getActivity()).setBottomNavSelected(R.id.nav_history);
-                }
                 redirectToHistory();
             }).addOnFailureListener(e -> {
                 Toast.makeText(getContext(), "❌ Failed to save trip.", Toast.LENGTH_SHORT).show();
@@ -234,10 +249,6 @@ public class RiderTripSummaryFragment extends Fragment implements OnMapReadyCall
 
     private void discardTrip() {
         Toast.makeText(getContext(), "Trip discarded", Toast.LENGTH_SHORT).show();
-        // === Jika nak sync nav ke home, boleh tambah di sini: ===
-        if (getActivity() instanceof RiderHomeActivity) {
-            ((RiderHomeActivity) getActivity()).setBottomNavSelected(R.id.nav_home);
-        }
         requireActivity().getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, new RiderStartTripFragment())
                 .commit();
