@@ -8,17 +8,19 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.*;
+
 import com.example.helmethero.R;
 import com.example.helmethero.adapters.AlertsAdapter;
 import com.example.helmethero.models.Alert;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class FamilyAlertFragment extends Fragment {
+public class FamilyAlertFragment extends Fragment implements AlertsAdapter.AlertSeenListener {
 
     private RecyclerView recyclerAlerts;
     private LinearLayout layoutNoAlerts;
@@ -40,7 +42,8 @@ public class FamilyAlertFragment extends Fragment {
         layoutNoAlerts = view.findViewById(R.id.layoutNoAlerts);
 
         recyclerAlerts.setLayoutManager(new LinearLayoutManager(getContext()));
-        alertsAdapter = new AlertsAdapter(alertList);
+        // Pass 'this' as the listener for the "Seen" button
+        alertsAdapter = new AlertsAdapter(alertList, this);
         recyclerAlerts.setAdapter(alertsAdapter);
 
         ItemTouchHelper.SimpleCallback itemTouchHelperCallback =
@@ -229,5 +232,15 @@ public class FamilyAlertFragment extends Fragment {
                 toggleEmptyView();
             }
         });
+    }
+
+    // ===== MARK ALERT AS SEEN LOGIC =====
+    @Override
+    public void onAlertSeen(String alertId) {
+        String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference alertRef = FirebaseDatabase.getInstance().getReference("Alerts")
+                .child(familyUid)
+                .child(alertId);
+        alertRef.child("status").setValue("SEEN");
     }
 }

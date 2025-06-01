@@ -106,18 +106,24 @@ public class RiderDetailBottomSheet extends BottomSheetDialogFragment {
                 String statusLabel = (tripActive != null && tripActive) ? "ACTIVE RIDE" : "NOT RIDING";
                 tvStatus.setText("Status: " + statusLabel);
 
-                String speed = snapshot.child("speed").getValue(String.class);
-                tvSpeed.setText("Speed: " + (speed != null ? speed : "0.0 km/h"));
+                // SAFE conversion for speed
+                Object speedObj = snapshot.child("speed").getValue();
+                String speed = speedObj != null ? String.valueOf(speedObj) : "0.0";
+                tvSpeed.setText("Speed: " + speed + " km/h");
 
-                String liveLocation = snapshot.child("location").getValue(String.class);
-                if (liveLocation != null && liveLocation.contains(",")) {
+                // SAFE conversion for location
+                Object locObj = snapshot.child("location").getValue();
+                String liveLocation = locObj != null ? String.valueOf(locObj) : "";
+                if (liveLocation.contains(",")) {
                     tvLoc.setText("Location: " + liveLocation);
                 } else {
                     tvLoc.setText("Location: " + lat + ", " + lng);
                 }
 
-                String lastUpdate = snapshot.child("lastUpdate").getValue(String.class);
-                if (lastUpdate != null && !lastUpdate.isEmpty()) {
+                // SAFE conversion for lastUpdate
+                Object lastUpdateObj = snapshot.child("lastUpdate").getValue();
+                String lastUpdate = lastUpdateObj != null ? String.valueOf(lastUpdateObj) : "";
+                if (!lastUpdate.isEmpty()) {
                     String formattedTime = getFormattedRelativeOrExactTime(lastUpdate);
                     tvLastUpdate.setText("Last update: " + formattedTime);
                 } else {

@@ -8,8 +8,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.*;
 import android.widget.*;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -19,6 +17,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.*;
 import com.google.firebase.storage.*;
+import com.yalantis.ucrop.UCrop;
+
+import java.io.File;
 
 public class RiderProfileSetupFragment extends Fragment {
 
@@ -32,7 +33,7 @@ public class RiderProfileSetupFragment extends Fragment {
     private FirebaseStorage storage;
     private StorageReference storageRef;
 
-    private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private static final int PICK_IMAGE_REQUEST = 1001;
 
     @Nullable
     @Override
@@ -64,29 +65,6 @@ public class RiderProfileSetupFragment extends Fragment {
             loadUserProfile();
         }
 
-        // 1. Setup image picker
-        imagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        selectedImageUri = result.getData().getData();
-
-                        if (selectedImageUri != null) {
-                            Glide.with(requireContext())
-                                    .load(selectedImageUri)
-                                    .placeholder(R.drawable.ic_profile) // fallback
-                                    .error(R.drawable.ic_profile)       // error fallback
-                                    .circleCrop()
-                                    .into(profileImageView);
-                        } else {
-                            Toast.makeText(getContext(), "❌ Failed to load image", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(getContext(), "⚠️ Image selection cancelled", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-        // 2. Click listeners
         profileImageView.setOnClickListener(v -> openGallery());
         btnSave.setOnClickListener(v -> saveUserProfile());
         btnCancel.setOnClickListener(v -> requireActivity().onBackPressed());
@@ -97,7 +75,40 @@ public class RiderProfileSetupFragment extends Fragment {
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");
-        imagePickerLauncher.launch(intent);
+        startActivityForResult(intent, PICK_IMAGE_REQUEST);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
+            Uri sourceUri = data.getData();
+            if (sourceUri != null) {
+                Uri destinationUri = Uri.fromFile(new File(requireContext().getCacheDir(), "cropped_profile_rider.jpg"));
+                UCrop.Options options = new UCrop.Options();
+                options.setCircleDimmedLayer(true);
+                options.setShowCropFrame(false);
+                options.setShowCropGrid(false);
+
+                UCrop.of(sourceUri, destinationUri)
+                        .withAspectRatio(1, 1)
+                        .withOptions(options)
+                        .start(requireContext(), this);
+            }
+        } else if (requestCode == UCrop.REQUEST_CROP && resultCode == Activity.RESULT_OK && data != null) {
+            Uri resultUri = UCrop.getOutput(data);
+            if (resultUri != null) {
+                selectedImageUri = resultUri;
+                Glide.with(requireContext())
+                        .load(selectedImageUri)
+                        .placeholder(R.drawable.ic_profile)
+                        .error(R.drawable.ic_profile)
+                        .circleCrop()
+                        .into(profileImageView);
+            }
+        } else if (requestCode == UCrop.REQUEST_CROP) {
+            Toast.makeText(getContext(), "❌ Image crop cancelled", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadUserProfile() {
@@ -115,7 +126,7 @@ public class RiderProfileSetupFragment extends Fragment {
                         Glide.with(requireContext())
                                 .load(imageUrl)
                                 .circleCrop()
-                                .into(profileImageView); // ✅ circular!
+                                .into(profileImageView);
                     }
                 }
             }

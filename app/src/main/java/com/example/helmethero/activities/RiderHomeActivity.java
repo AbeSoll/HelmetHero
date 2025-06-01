@@ -4,6 +4,9 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.HapticFeedbackConstants;
+import android.view.animation.OvershootInterpolator;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -12,6 +15,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.bumptech.glide.Glide;
 import com.example.helmethero.R;
 import com.example.helmethero.fragments.rider.RiderEmergencyContactFragment;
 import com.example.helmethero.fragments.rider.RiderHelmetFragment;
@@ -21,10 +25,13 @@ import com.example.helmethero.fragments.rider.RiderStartTripFragment;
 import com.example.helmethero.fragments.rider.RiderTripFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.*;
 
 public class RiderHomeActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNav;
+    private ImageView profileImage;
 
     // Fragment tags
     private static final String TAG_START_TRIP = "RiderStartTripFragment";
@@ -45,15 +52,77 @@ public class RiderHomeActivity extends AppCompatActivity {
         TextView title = toolbar.findViewById(R.id.toolbar_title);
         title.setText("Helmet Hero");
 
+        profileImage = toolbar.findViewById(R.id.profile_image);
+
+        // Load Profile Image from Firebase
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (uid != null) {
+            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
+            userRef.child("profileImageUrl").addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String url = snapshot.getValue(String.class);
+                    if (url != null && !url.isEmpty()) {
+                        Glide.with(RiderHomeActivity.this)
+                                .load(url)
+                                .placeholder(R.drawable.ic_profile)
+                                .error(R.drawable.ic_profile)
+                                .circleCrop()
+                                .into(profileImage);
+                    } else {
+                        profileImage.setImageResource(R.drawable.ic_profile);
+                    }
+                }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    profileImage.setImageResource(R.drawable.ic_profile);
+                }
+            });
+        }
+
+        // Make profile image clickable: open settings/profile
+        profileImage.setOnClickListener(v -> {
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            transaction.setReorderingAllowed(true);
+            transaction.replace(R.id.fragment_container, new RiderSettingsFragment(), TAG_SETTINGS);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        });
+
         // Initialize Bottom Navigation
         bottomNav = findViewById(R.id.bottom_navigation);
 
+        // Animation on tab select (native scale & bounce)
         bottomNav.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                // Scale animation for each item
+                for (int i = 0; i < bottomNav.getMenu().size(); i++) {
+                    MenuItem menuItem = bottomNav.getMenu().getItem(i);
+                    final View view = bottomNav.findViewById(menuItem.getItemId());
+                    if (view != null) {
+                        if (menuItem == item) {
+                            // Scale up + bounce + haptic
+                            view.animate()
+                                    .scaleX(1.12f)
+                                    .scaleY(1.12f)
+                                    .setDuration(180)
+                                    .setInterpolator(new OvershootInterpolator())
+                                    .start();
+                            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                        } else {
+                            view.animate()
+                                    .scaleX(1f)
+                                    .scaleY(1f)
+                                    .setDuration(150)
+                                    .start();
+                        }
+                    }
+                }
+
                 Fragment selectedFragment = null;
                 String tag = null;
-
                 int itemId = item.getItemId();
 
                 if (itemId == R.id.nav_home) {
@@ -126,5 +195,4 @@ public class RiderHomeActivity extends AppCompatActivity {
             bottomNav.setVisibility(show ? View.VISIBLE : View.GONE);
         }
     }
-
 }

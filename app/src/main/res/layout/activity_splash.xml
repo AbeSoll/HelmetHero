@@ -10,7 +10,7 @@
     <ImageView
         android:id="@+id/logoImage"
         android:layout_width="219dp"
-        android:layout_height="129dp"
+        android:layout_height="199dp"
         android:contentDescription="HelmetHero Logo"
         android:src="@drawable/ic_helmethero_logo" />
 

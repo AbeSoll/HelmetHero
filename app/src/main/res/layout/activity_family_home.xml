@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:ignore="MissingClass">
 
     <!-- Top App Bar -->
     <androidx.appcompat.widget.Toolbar
@@ -13,31 +15,89 @@
         android:elevation="4dp"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="8dp">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-            <ImageView
-                android:id="@+id/logo_icon"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@drawable/ic_helmethero_logo"
-                android:contentDescription="App Logo" />
-
-            <TextView
-                android:id="@+id/toolbar_title"
+            <LinearLayout
+                android:id="@+id/toolbar_left_container"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Helmet Hero"
-                android:textColor="@android:color/white"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:layout_alignParentStart="true">
 
+                <ImageView
+                    android:id="@+id/logo_icon"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_helmethero_logo"
+                    android:contentDescription="App Logo" />
+
+                <TextView
+                    android:id="@+id/toolbar_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Helmet Hero"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/toolbar_right_container"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="12dp">
+
+                <FrameLayout
+                    android:id="@+id/notification_container"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/notification_icon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_notification_bell"
+                        android:contentDescription="Notifications"
+                        android:padding="2dp"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:id="@+id/notification_badge"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:background="@drawable/bg_badge"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:text="3"
+                        android:gravity="center"
+                        android:textSize="12sp"
+                        android:layout_gravity="end|top"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginTop="2dp"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <ImageView
+                    android:id="@+id/profile_icon"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_profile"
+                    android:contentDescription="Profile"
+                    android:background="@drawable/bg_profile_circle"
+                    android:scaleType="centerCrop"
+                    android:layout_gravity="center_vertical"/>
+            </LinearLayout>
+        </RelativeLayout>
     </androidx.appcompat.widget.Toolbar>
 
     <FrameLayout
@@ -51,12 +111,13 @@
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
+        style="@style/TikTokBottomNav"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_alignParentBottom="true"
         app:menu="@menu/family_bottom_nav_menu"
         app:labelVisibilityMode="labeled"
         app:itemIconTint="@color/selector_nav_item_color"
         app:itemTextColor="@color/selector_nav_item_color"
-        android:background="?android:attr/windowBackground" />
+        android:background="@android:color/white" />
 </RelativeLayout>

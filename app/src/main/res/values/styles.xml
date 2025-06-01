@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- styles.xml -->
+<resources>
+    <style name="TikTokBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemIconSize">21dp</item>
+        <item name="itemTextAppearanceActive">@style/TikTokBottomNavText</item>
+        <item name="itemTextAppearanceInactive">@style/TikTokBottomNavText</item>
+    </style>
+
+    <style name="TikTokBottomNavText" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:textSize">9sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

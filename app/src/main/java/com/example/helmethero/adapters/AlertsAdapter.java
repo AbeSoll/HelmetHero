@@ -17,18 +17,23 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.helmethero.R;
 import com.example.helmethero.models.Alert;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
 public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewHolder> {
 
     private final List<Alert> alertList;
+    private final AlertSeenListener listener;
 
-    public AlertsAdapter(List<Alert> alertList) {
+    // AlertSeenListener interface for parent to react on "Seen"
+    public interface AlertSeenListener {
+        void onAlertSeen(String alertId);
+    }
+
+    // Use this constructor in FamilyAlertFragment
+    public AlertsAdapter(List<Alert> alertList, AlertSeenListener listener) {
         this.alertList = alertList;
+        this.listener = listener;
     }
 
     @NonNull
@@ -71,34 +76,31 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
         String status = alert.getStatus() != null ? alert.getStatus().toUpperCase() : "-";
         holder.textAlertStatus.setText(status);
 
+        // Handle clickable "SEEN" status
         if ("NEW".equalsIgnoreCase(status)) {
             holder.textAlertStatus.setBackgroundResource(R.drawable.bg_status_badge);
+            holder.textAlertStatus.setTextColor(Color.WHITE);
+            holder.textAlertStatus.setClickable(true);
             holder.textAlertStatus.setOnClickListener(v -> {
-                String familyUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                String alertId = alert.getAlertId();
-                DatabaseReference alertRef = FirebaseDatabase.getInstance()
-                        .getReference("Alerts")
-                        .child(familyUid)
-                        .child(alertId);
-
-                alertRef.child("status").setValue("SEEN");
-                alertRef.child("seen").setValue(true);
-
-                alert.setStatus("SEEN");
-
+                // Notify parent fragment to mark as seen (to update badge)
+                if (listener != null) {
+                    listener.onAlertSeen(alert.getId());
+                }
+                alert.setStatus("SEEN"); // Local update for instant UI
                 int pos = holder.getAdapterPosition();
                 if (pos != RecyclerView.NO_POSITION) {
                     notifyItemChanged(pos);
                 }
-
-                holder.textAlertStatus.setOnClickListener(null);
-                Toast.makeText(holder.itemView.getContext(), "Alert seen.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(holder.itemView.getContext(), "Alert marked as seen.", Toast.LENGTH_SHORT).show();
             });
         } else {
             holder.textAlertStatus.setBackgroundColor(Color.parseColor("#AAB2B5"));
+            holder.textAlertStatus.setTextColor(Color.WHITE);
             holder.textAlertStatus.setOnClickListener(null);
+            holder.textAlertStatus.setClickable(false);
         }
 
+        // Tap to open location in Google Maps
         holder.itemView.setOnClickListener(v -> {
             String locationStr = alert.getLocation();
             if (locationStr != null && locationStr.contains(",")) {

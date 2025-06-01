@@ -45,6 +45,7 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
         tagWeather = view.findViewById(R.id.tag_weather);
         tagHelmet = view.findViewById(R.id.tag_helmet);
 
+        // Disable input - Family hanya boleh view
         editTripNote.setEnabled(false);
         for (int i = 0; i < radioMoodGroup.getChildCount(); i++) {
             radioMoodGroup.getChildAt(i).setEnabled(false);
@@ -117,7 +118,6 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
                             editTripNote.setText(noteText);
                         }
                     }
-
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) { /* ignore */ }
                 });
@@ -152,13 +152,34 @@ public class FamilyTripDetailFragment extends Fragment implements OnMapReadyCall
                     }
 
                     if (!route.isEmpty()) {
+                        // Draw route polyline
                         PolylineOptions polylineOptions = new PolylineOptions()
                                 .addAll(route)
                                 .width(8f)
                                 .color(ContextCompat.getColor(requireContext(), R.color.helmet_blue))
                                 .geodesic(true);
                         map.addPolyline(polylineOptions);
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(route.get(0), 15f));
+
+                        // Start marker
+                        LatLng start = route.get(0);
+                        map.addMarker(new MarkerOptions()
+                                .position(start)
+                                .title("Start")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+                        // End marker
+                        LatLng end = route.get(route.size() - 1);
+                        map.addMarker(new MarkerOptions()
+                                .position(end)
+                                .title("End")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+                        // Camera: fit to route
+                        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                        for (LatLng point : route) builder.include(point);
+                        LatLngBounds bounds = builder.build();
+                        int padding = 120; // px
+                        map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
                     }
                 }
 

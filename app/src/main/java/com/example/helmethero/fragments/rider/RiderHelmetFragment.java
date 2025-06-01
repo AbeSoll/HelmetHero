@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.helmethero.R;
 import com.example.helmethero.utils.BluetoothService;
+import com.bumptech.glide.Glide;
 
 public class RiderHelmetFragment extends Fragment implements BluetoothService.BluetoothListener {
 
@@ -32,9 +33,7 @@ public class RiderHelmetFragment extends Fragment implements BluetoothService.Bl
         BluetoothService.getInstance().setListener(this);
 
         connectButton.setOnClickListener(v -> {
-            textHelmetStatus.setText("Connecting...");
-            imgHelmetStatus.setImageResource(R.drawable.ic_loading_spinner); // Optional spinner
-            imgHelmetStatus.setTooltipText("Connecting...");
+            setConnectingUI();
             BluetoothService.getInstance().connectHelmet();
         });
 
@@ -55,6 +54,18 @@ public class RiderHelmetFragment extends Fragment implements BluetoothService.Bl
             imgHelmetStatus.setTooltipText("Helmet Not Connected");
             textHelmetStatus.setText("Helmet Not Connected");
         }
+    }
+
+    @SuppressLint("NewApi")
+    private void setConnectingUI() {
+        // Show the animated GIF using Glide
+        Glide.with(this)
+                .asGif()
+                .load(R.drawable.ic_loading_spinner) // must be a .gif in drawable
+                .into(imgHelmetStatus);
+
+        imgHelmetStatus.setTooltipText("Connecting...");
+        textHelmetStatus.setText("Connecting...");
     }
 
     @Override
