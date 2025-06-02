@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.helmethero.R;
 import com.example.helmethero.fragments.family.FamilyAlertFragment;
 import com.example.helmethero.fragments.family.FamilyDashboardFragment;
@@ -25,6 +26,7 @@ import com.example.helmethero.fragments.family.FamilySettingsFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.*;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -54,18 +56,18 @@ public class FamilyHomeActivity extends AppCompatActivity {
             }
         }
 
-        // FCM token update
-        FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(task -> {
-                    if (!task.isSuccessful()) return;
+        // ====== FCM TOKEN UPDATE (Always save on entering Home) =======
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            String uid = user.getUid();
+            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
                     String token = task.getResult();
-                    String uid = FirebaseAuth.getInstance().getCurrentUser() != null
-                            ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
-                    if (uid != null) {
-                        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Users").child(uid).child("fcmToken");
-                        ref.setValue(token);
-                    }
-                });
+                    DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Users").child(uid).child("fcmToken");
+                    ref.setValue(token);
+                }
+            });
+        }
 
         // Setup Toolbar
         Toolbar toolbar = findViewById(R.id.top_toolbar);
@@ -169,7 +171,6 @@ public class FamilyHomeActivity extends AppCompatActivity {
                 .setReorderingAllowed(true)
                 .replace(R.id.family_fragment_container, new FamilyAlertFragment(), TAG_ALERTS)
                 .commit();
-        // TIADA LAGI resetNotificationBadge() DI SINI!
     }
 
     // Helper: go to settings/profile when profile icon is tapped
@@ -212,7 +213,7 @@ public class FamilyHomeActivity extends AppCompatActivity {
         }
     }
 
-    // Load profile image from Firebase
+    // Load profile image from Firebase (SKIP CACHE)
     private void loadProfileImage() {
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
@@ -223,6 +224,8 @@ public class FamilyHomeActivity extends AppCompatActivity {
                 if (imageUrl != null && !imageUrl.isEmpty()) {
                     Glide.with(FamilyHomeActivity.this)
                             .load(imageUrl)
+                            .skipMemoryCache(true)
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
                             .placeholder(R.drawable.ic_profile)
                             .error(R.drawable.ic_profile)
                             .circleCrop()
@@ -236,6 +239,11 @@ public class FamilyHomeActivity extends AppCompatActivity {
                 profileIcon.setImageResource(R.drawable.ic_profile);
             }
         });
+    }
+
+    // PUBLIC: Refresh profile image (boleh dipanggil dari fragment selepas upload gambar)
+    public void refreshProfileImage() {
+        loadProfileImage();
     }
 
     // For hiding/showing bottom nav from fragment

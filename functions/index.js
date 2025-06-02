@@ -126,31 +126,33 @@ exports.notifyFamilyOnTripChange = onValueWritten(
 );
 
 /**
- * 3. Emergency Contacts Linked/Unlinked Notification
+ * 3. Emergency Contacts Linked/Unlinked Notification (for both Rider & Family)
  */
-exports.notifyFamilyOnContactChange = onValueWritten(
+exports.notifyFamilyAndRiderOnContactChange = onValueWritten(
   "/Riders/{riderId}/emergencyContacts",
   async (event) => {
     const riderId = event.params.riderId;
     const afterContacts = event.data.after.val() || {};
     const beforeContacts = event.data.before.val() || {};
 
-    // Find new (linked) and removed (unlinked)
     const newContacts = Object.keys(afterContacts).filter(x => !beforeContacts.hasOwnProperty(x));
     const removedContacts = Object.keys(beforeContacts).filter(x => !afterContacts.hasOwnProperty(x));
 
-    // Get riderName
-    let riderName = "Rider";
-    const riderProfileSnap = await getDatabase().ref(`/Users/${riderId}/name`).once("value");
-    if (riderProfileSnap.exists()) riderName = riderProfileSnap.val();
+    const riderProfileSnap = await getDatabase().ref(`/Users/${riderId}`).once("value");
+    const riderProfile = riderProfileSnap.val();
+    const riderName = riderProfile?.name || "Rider";
+    const riderToken = riderProfile?.fcmToken || null;
 
-    // Notify newly linked family
     for (const fid of newContacts) {
-      const userSnap = await getDatabase().ref(`/Users/${fid}/fcmToken`).once("value");
-      const token = userSnap.val();
-      if (token) {
+      const familySnap = await getDatabase().ref(`/Users/${fid}`).once("value");
+      const family = familySnap.val();
+      const familyName = family?.name || "Family Member";
+      const familyToken = family?.fcmToken;
+
+      // To Family
+      if (familyToken) {
         await admin.messaging().send({
-          token,
+          token: familyToken,
           notification: {
             title: "HelmetHero: Linked!",
             body: `${riderName} has linked you as an emergency contact.`
@@ -158,18 +160,42 @@ exports.notifyFamilyOnContactChange = onValueWritten(
           data: {
             riderId,
             linkStatus: "linked",
-            riderName
+            riderName,
+            userRole: "Family Member"
           }
         });
+        console.log(`✅ Sent link notification to FAMILY: ${familyName}`);
+      }
+
+      // To Rider
+      if (riderToken) {
+        await admin.messaging().send({
+          token: riderToken,
+          notification: {
+            title: "HelmetHero: Family Linked",
+            body: `You’ve successfully linked with ${familyName}.`
+          },
+          data: {
+            familyUid: fid,
+            linkStatus: "linked",
+            familyName,
+            userRole: "Rider"
+          }
+        });
+        console.log(`✅ Sent link notification to RIDER: ${riderName}`);
       }
     }
-    // Notify unlinked family
+
     for (const fid of removedContacts) {
-      const userSnap = await getDatabase().ref(`/Users/${fid}/fcmToken`).once("value");
-      const token = userSnap.val();
-      if (token) {
+      const familySnap = await getDatabase().ref(`/Users/${fid}`).once("value");
+      const family = familySnap.val();
+      const familyName = family?.name || "Family Member";
+      const familyToken = family?.fcmToken;
+
+      // To Family
+      if (familyToken) {
         await admin.messaging().send({
-          token,
+          token: familyToken,
           notification: {
             title: "HelmetHero: Unlinked",
             body: `${riderName} has unlinked you from emergency contacts.`
@@ -177,11 +203,32 @@ exports.notifyFamilyOnContactChange = onValueWritten(
           data: {
             riderId,
             linkStatus: "unlinked",
-            riderName
+            riderName,
+            userRole: "Family Member"
           }
         });
+        console.log(`📤 Sent unlink notification to FAMILY: ${familyName}`);
+      }
+
+      // To Rider
+      if (riderToken) {
+        await admin.messaging().send({
+          token: riderToken,
+          notification: {
+            title: "HelmetHero: Family Unlinked",
+            body: `${familyName} has been removed from your emergency contact list.`
+          },
+          data: {
+            familyUid: fid,
+            linkStatus: "unlinked",
+            familyName,
+            userRole: "Rider"
+          }
+        });
+        console.log(`📤 Sent unlink notification to RIDER: ${riderName}`);
       }
     }
+
     return null;
   }
 );

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- styles.xml -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="TikTokBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="itemIconSize">21dp</item>
         <item name="itemTextAppearanceActive">@style/TikTokBottomNavText</item>
@@ -10,5 +10,16 @@
     <style name="TikTokBottomNavText" parent="TextAppearance.AppCompat.Caption">
         <item name="android:textSize">9sp</item>
         <item name="android:textStyle">bold</item>
+    </style>
+    <!-- Mood RadioButton style -->
+    <style name="MoodRadioButton" tools:ignore="DuplicateDefinition">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/bg_mood_selector</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:button">@null</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_marginEnd">8dp</item>
     </style>
 </resources>

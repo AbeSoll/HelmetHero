@@ -13,8 +13,6 @@ public class Trip implements Serializable {
     private String status;
     private String date;
     private Map<String, Object> notes;
-
-    // Use the same name as Firebase ("path")
     private List<Map<String, Double>> path;
 
     public Trip() {}

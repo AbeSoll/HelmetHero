@@ -1,8 +1,8 @@
 package com.example.helmethero.fragments.rider;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.*;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -30,13 +30,13 @@ public class RiderHistoryFragment extends Fragment {
     private List<Integer> dayList = new ArrayList<>();
     private RecyclerView recyclerDatePicker, recyclerTripHistory;
     private TextView textMonthPicker;
-    private LinearLayout layoutEmptyState;
+    private LinearLayout layoutEmptyState, layoutMonthPicker;
+    private ImageView btnMonthPrev, btnMonthNext;
     private DatabaseReference tripsRef;
 
     // Restore state
     private int selectedYear, selectedMonth, selectedDay;
-
-    private int presentDay = -1; // NEW: track present day of month for highlight
+    private int presentDay = -1; // track present day of month for highlight
 
     private static final String STATE_YEAR = "state_year";
     private static final String STATE_MONTH = "state_month";
@@ -50,7 +50,13 @@ public class RiderHistoryFragment extends Fragment {
 
         recyclerDatePicker = view.findViewById(R.id.recyclerDatePicker);
         recyclerTripHistory = view.findViewById(R.id.recyclerTripHistory);
+
+        // --- Month picker views (NEW) ---
+        layoutMonthPicker = view.findViewById(R.id.layoutMonthPicker);
+        btnMonthPrev = view.findViewById(R.id.btnMonthPrev);
+        btnMonthNext = view.findViewById(R.id.btnMonthNext);
         textMonthPicker = view.findViewById(R.id.textMonthPicker);
+
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
 
         recyclerDatePicker.setLayoutManager(
@@ -79,29 +85,39 @@ public class RiderHistoryFragment extends Fragment {
         }
 
         updatePresentDay();
-        setupMonthPicker();
+        updateMonthPickerText();
         setupDatePicker();
 
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         tripsRef = FirebaseDatabase.getInstance().getReference("Trips").child(uid);
 
-        loadTripsForSelectedDate();
-
-        return view;
-    }
-
-    // Save state
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putInt(STATE_YEAR, selectedYear);
-        outState.putInt(STATE_MONTH, selectedMonth);
-        outState.putInt(STATE_DAY, selectedDay);
-    }
-
-    private void setupMonthPicker() {
-        updateMonthPickerText();
-        textMonthPicker.setOnClickListener(v -> {
+        // ========== Chevron Button Logic ==========
+        btnMonthPrev.setOnClickListener(v -> {
+            selectedMonth--;
+            if (selectedMonth < 0) {
+                selectedMonth = 11;
+                selectedYear--;
+            }
+            selectedDay = 1;
+            updatePresentDay();
+            updateMonthPickerText();
+            updateDatePicker();
+            loadTripsForSelectedDate();
+        });
+        btnMonthNext.setOnClickListener(v -> {
+            selectedMonth++;
+            if (selectedMonth > 11) {
+                selectedMonth = 0;
+                selectedYear++;
+            }
+            selectedDay = 1;
+            updatePresentDay();
+            updateMonthPickerText();
+            updateDatePicker();
+            loadTripsForSelectedDate();
+        });
+        layoutMonthPicker.setOnClickListener(v -> {
+            // Optional: Boleh buka MaterialDatePicker asal
             MaterialDatePicker<Long> datePicker =
                     MaterialDatePicker.Builder.datePicker()
                             .setTitleText("Select Month")
@@ -122,12 +138,26 @@ public class RiderHistoryFragment extends Fragment {
                 } else {
                     selectedDay = 1;
                 }
-                updatePresentDay(); // <--- must update presentDay here
+                updatePresentDay();
                 updateMonthPickerText();
                 updateDatePicker();
                 loadTripsForSelectedDate();
             });
         });
+        // ========== END Chevron Button Logic ==========
+
+        loadTripsForSelectedDate();
+
+        return view;
+    }
+
+    // Save state
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_YEAR, selectedYear);
+        outState.putInt(STATE_MONTH, selectedMonth);
+        outState.putInt(STATE_DAY, selectedDay);
     }
 
     private void updatePresentDay() {

@@ -60,10 +60,14 @@ dependencies {
     implementation("com.github.dhaval2404:imagepicker:2.1")
     implementation("com.google.firebase:firebase-storage:20.2.1")
     implementation("com.github.bumptech.glide:glide:4.15.1")
-    implementation ("com.google.android.material:material:1.12.0")
-    implementation ("pl.droidsonroids.gif:android-gif-drawable:1.2.27")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.27")
+    implementation(libs.navigation.fragment)
+    implementation(libs.navigation.ui)
     annotationProcessor("com.github.bumptech.glide:compiler:4.15.1")
-    implementation ("com.github.yalantis:ucrop:2.2.8")
+    implementation("com.github.yalantis:ucrop:2.2.8")
+    implementation("com.journeyapps:zxing-android-embedded:4.1.0")
+
 
 
     testImplementation(libs.junit)

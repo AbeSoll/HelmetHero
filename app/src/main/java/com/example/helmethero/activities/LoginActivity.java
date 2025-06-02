@@ -13,6 +13,7 @@ import com.example.helmethero.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.*;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -71,13 +72,24 @@ public class LoginActivity extends AppCompatActivity {
                                         String roleInDB = snapshot.child("role").getValue(String.class);
                                         if (roleInDB != null && selectedRole.equals(roleInDB)) {
 
-                                            // ✅ Save role to SharedPreferences
                                             SharedPreferences prefs = getSharedPreferences("HelmetHeroPrefs", MODE_PRIVATE);
                                             SharedPreferences.Editor editor = prefs.edit();
                                             editor.putString("role", roleInDB);
                                             editor.apply();
 
-                                            // Redirect based on role
+                                            // ====== SAVE FCM TOKEN TO DB ======
+                                            FirebaseMessaging.getInstance().getToken()
+                                                    .addOnCompleteListener(tokenTask -> {
+                                                        if (tokenTask.isSuccessful()) {
+                                                            String token = tokenTask.getResult();
+                                                            FirebaseDatabase.getInstance()
+                                                                    .getReference("Users").child(uid).child("fcmToken")
+                                                                    .setValue(token);
+                                                        }
+                                                    });
+                                            // ===================================
+
+                                            // Redirect to correct Home
                                             if (roleInDB.equals("Rider")) {
                                                 startActivity(new Intent(LoginActivity.this, RiderHomeActivity.class));
                                             } else {
@@ -91,7 +103,6 @@ public class LoginActivity extends AppCompatActivity {
                                         Toast.makeText(LoginActivity.this, "Role not found in database.", Toast.LENGTH_SHORT).show();
                                     }
                                 });
-
                             }
                         } else {
                             Toast.makeText(LoginActivity.this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
@@ -104,7 +115,8 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         forgotPassword.setOnClickListener(v -> {
-            Toast.makeText(LoginActivity.this, "Reset password function coming soon", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
+            startActivity(intent);
         });
     }
 }

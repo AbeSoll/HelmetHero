@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.helmethero.R;
 import com.example.helmethero.fragments.rider.RiderEmergencyContactFragment;
 import com.example.helmethero.fragments.rider.RiderHelmetFragment;
@@ -26,7 +27,9 @@ import com.example.helmethero.fragments.rider.RiderTripFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.*;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class RiderHomeActivity extends AppCompatActivity {
 
@@ -47,6 +50,18 @@ public class RiderHomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rider_home);
 
+        // ====== FCM TOKEN UPDATE (Always save on entering Home) =======
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            String uid = user.getUid();
+            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    String token = task.getResult();
+                    FirebaseDatabase.getInstance().getReference("Users").child(uid).child("fcmToken").setValue(token);
+                }
+            });
+        }
+
         // Setup Toolbar as ActionBar
         Toolbar toolbar = findViewById(R.id.top_toolbar);
         TextView title = toolbar.findViewById(R.id.toolbar_title);
@@ -55,31 +70,7 @@ public class RiderHomeActivity extends AppCompatActivity {
         profileImage = toolbar.findViewById(R.id.profile_image);
 
         // Load Profile Image from Firebase
-        String uid = FirebaseAuth.getInstance().getCurrentUser() != null
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
-        if (uid != null) {
-            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
-            userRef.child("profileImageUrl").addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    String url = snapshot.getValue(String.class);
-                    if (url != null && !url.isEmpty()) {
-                        Glide.with(RiderHomeActivity.this)
-                                .load(url)
-                                .placeholder(R.drawable.ic_profile)
-                                .error(R.drawable.ic_profile)
-                                .circleCrop()
-                                .into(profileImage);
-                    } else {
-                        profileImage.setImageResource(R.drawable.ic_profile);
-                    }
-                }
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    profileImage.setImageResource(R.drawable.ic_profile);
-                }
-            });
-        }
+        loadProfileImage();
 
         // Make profile image clickable: open settings/profile
         profileImage.setOnClickListener(v -> {
@@ -187,6 +178,42 @@ public class RiderHomeActivity extends AppCompatActivity {
                         .commit();
             }
         }
+    }
+
+    // Load profile image from Firebase (SKIP CACHE)
+    private void loadProfileImage() {
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (uid != null) {
+            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
+            userRef.child("profileImageUrl").addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String url = snapshot.getValue(String.class);
+                    if (url != null && !url.isEmpty()) {
+                        Glide.with(RiderHomeActivity.this)
+                                .load(url)
+                                .skipMemoryCache(true)
+                                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                .placeholder(R.drawable.ic_profile)
+                                .error(R.drawable.ic_profile)
+                                .circleCrop()
+                                .into(profileImage);
+                    } else {
+                        profileImage.setImageResource(R.drawable.ic_profile);
+                    }
+                }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    profileImage.setImageResource(R.drawable.ic_profile);
+                }
+            });
+        }
+    }
+
+    // PUBLIC: Refresh profile image (boleh dipanggil dari fragment selepas upload gambar)
+    public void refreshProfileImage() {
+        loadProfileImage();
     }
 
     // For showing/hiding bottom nav from fragment

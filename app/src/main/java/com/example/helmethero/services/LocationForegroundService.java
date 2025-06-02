@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.*;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
@@ -34,8 +35,21 @@ public class LocationForegroundService extends Service {
         startLocationUpdates();
     }
 
-    @SuppressLint("MissingPermission")
     private void startLocationUpdates() {
+        boolean granted = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            granted &= checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14+
+                granted &= checkSelfPermission(android.Manifest.permission.FOREGROUND_SERVICE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            }
+        } else {
+            granted &= checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        }
+        if (!granted) {
+            stopSelf();
+            return;
+        }
+        @SuppressLint("MissingPermission")
         LocationRequest request = LocationRequest.create()
                 .setInterval(1000)
                 .setPriority(Priority.PRIORITY_HIGH_ACCURACY);
@@ -44,7 +58,6 @@ public class LocationForegroundService extends Service {
             @Override
             public void onLocationResult(LocationResult result) {
                 for (Location location : result.getLocations()) {
-                    // Push to Firebase (same as current trip logic)
                     String uid = FirebaseAuth.getInstance().getCurrentUser() != null ?
                             FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
                     if (uid != null) {
@@ -53,7 +66,6 @@ public class LocationForegroundService extends Service {
                         String locStr = location.getLatitude() + "," + location.getLongitude();
                         ref.child("location").setValue(locStr);
                         ref.child("lastUpdate").setValue(System.currentTimeMillis());
-                        // Boleh tambah: speed, tripActive flag, etc.
                     }
                 }
             }
@@ -61,6 +73,7 @@ public class LocationForegroundService extends Service {
 
         fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
     }
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {

@@ -27,7 +27,7 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="400dp"
+            android:layout_height="250dp"
             android:layout_marginBottom="20dp"
             android:background="@drawable/rounded_grey_border">
 

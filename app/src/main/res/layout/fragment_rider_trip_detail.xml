@@ -12,23 +12,41 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/rounded_white_box"
-        android:padding="20dp"
+        android:padding="22dp"
         android:elevation="3dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="22dp"
         android:clipToPadding="false">
 
-        <!-- 🔙 Back Button -->
-        <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="start"
-            android:layout_marginBottom="12dp"
-            android:src="@drawable/ic_arrow_back"
-            android:contentDescription="Back to previous screen"
-            android:clickable="true"
-            android:focusable="true"
-            tools:ignore="HardcodedText" />
+        <!-- 🔙 Top Bar: Back + Title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="18dp">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_arrow_back"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Back"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:layout_marginEnd="10dp"
+                tools:ignore="HardcodedText" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Trip Details"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
 
         <!-- 🗺️ Route Map Preview -->
         <TextView
@@ -36,14 +54,15 @@
             android:layout_height="wrap_content"
             android:text="Trip Route"
             android:textStyle="bold"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:layout_marginBottom="8dp"
             android:textColor="#1E2D60"/>
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="400dp"
-            android:layout_marginBottom="20dp"
+            android:layout_height="250dp"
+            android:minHeight="180dp"
+            android:layout_marginBottom="18dp"
             android:background="@drawable/rounded_grey_border">
 
             <fragment
@@ -58,49 +77,49 @@
             android:text="Trip Summary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold"
             android:textColor="#1E2D60"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="10dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/rounded_lightblue_box"
-            android:padding="16dp"
+            android:padding="14dp"
             android:layout_marginBottom="16dp">
 
             <TextView android:id="@+id/tripDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Date: --"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:layout_marginBottom="4dp"/>
+                android:textColor="#223257"
+                android:textSize="15sp"
+                android:layout_marginBottom="2dp"/>
 
             <TextView android:id="@+id/tripDurationValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Duration: 00:00:00"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:layout_marginBottom="4dp"/>
+                android:textColor="#223257"
+                android:textSize="15sp"
+                android:layout_marginBottom="2dp"/>
 
             <TextView android:id="@+id/tripDistanceValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Distance: 0.00 km"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:layout_marginBottom="4dp"/>
+                android:textColor="#223257"
+                android:textSize="15sp"
+                android:layout_marginBottom="2dp"/>
 
             <TextView android:id="@+id/tripAvgSpeedValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Average Speed: 0.0 km/h"
-                android:textColor="#000000"
-                android:textSize="16sp"/>
+                android:textColor="#223257"
+                android:textSize="15sp"/>
         </LinearLayout>
 
         <!-- 📝 Notes Section -->
@@ -108,20 +127,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Trip Notes"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold"
-            android:textColor="@color/black"
+            android:textColor="#1E2D60"
             android:layout_marginBottom="6dp"/>
 
-        <!-- ✅ Save + ❌ Delete Buttons -->
         <include layout="@layout/trip_notes_component" />
 
+        <!-- ✅ Save + ❌ Delete Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:weightSum="2">
+            android:weightSum="2"
+            android:layout_marginTop="8dp">
 
             <Button
                 android:id="@+id/btnSaveNote"
@@ -143,6 +163,5 @@
                 android:textColor="@android:color/white"
                 android:layout_marginStart="8dp"/>
         </LinearLayout>
-
     </LinearLayout>
 </ScrollView>

@@ -1,42 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
     android:background="#DDE9FF">
 
-    <!-- Title -->
-    <TextView
-        android:id="@+id/textEmergencyTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select Emergency Contact"
-        android:textStyle="bold"
-        android:textSize="20sp"
-        android:textColor="@android:color/black"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="12dp" />
-
-    <!-- RecyclerView (set height to 0dp with weight to leave space for Save button) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerEmergencyContacts"
+    <!-- Main Content -->
+    <LinearLayout
+        android:id="@+id/layoutContent"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:scrollbars="vertical"
-        android:paddingBottom="8dp" />
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <!-- Save Button -->
-    <Button
-        android:id="@+id/btnSaveContacts"
+        <!-- Title -->
+        <TextView
+            android:id="@+id/textEmergencyTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your Emergency Contacts"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp" />
+
+        <!-- RecyclerView for Emergency Contacts -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerEmergencyContacts"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:scrollbars="vertical"
+            android:paddingBottom="8dp" />
+
+        <!-- Unlink Button (Initially hidden) -->
+        <Button
+            android:id="@+id/btnUnlinkSelected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unlink Selected"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:textColor="@android:color/white"
+            android:backgroundTint="#C62828"
+            android:visibility="gone"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp" />
+    </LinearLayout>
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/layoutNoContacts"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Save"
-        android:backgroundTint="#1E2D60"
-        android:textColor="@android:color/white"
-        android:textAllCaps="false"
-        android:textSize="16sp"
-        android:layout_marginTop="12dp" />
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="24dp">
+
+        <ImageView
+            android:layout_width="180dp"
+            android:layout_height="140dp"
+            android:src="@drawable/ic_no_contacts"
+            android:contentDescription="No Emergency Contact"
+            android:alpha="0.65"
+            android:layout_gravity="center_horizontal" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No Linked Family Found"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#333"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center_horizontal" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ask your family to add you using your Invite Code or QR."
+            android:textSize="15sp"
+            android:textColor="#777"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
+</FrameLayout>

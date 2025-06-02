@@ -2,7 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
+    <!-- Core permissions -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -17,6 +21,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <!-- For QR Scanner -->
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
         android:allowBackup="true"
@@ -45,10 +51,26 @@
         <activity android:name=".activities.LoginActivity" android:exported="false" />
         <activity android:name=".activities.SignupActivity" android:exported="false" />
         <activity android:name=".activities.RiderHomeActivity" android:exported="false" />
+        <activity android:name=".activities.ForgotPasswordActivity" />
+
         <activity
             android:name=".activities.FamilyHomeActivity"
             android:exported="false"
             android:theme="@style/Theme.HelmetHero" />
+
+        <!-- QR Code Scan Activity -->
+        <activity
+            android:name=".activities.CapturePortraitActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+
+        <activity
+            android:name=".activities.QrScanActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+
 
         <!-- Firebase Messaging Service (for push notifications) -->
         <service
@@ -59,12 +81,12 @@
             </intent-filter>
         </service>
 
-
         <!-- Preloaded fonts meta -->
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
 
+        <!-- Location foreground service -->
         <service
             android:name=".services.LocationForegroundService"
             android:enabled="true"

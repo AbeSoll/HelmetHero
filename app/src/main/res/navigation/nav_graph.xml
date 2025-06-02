@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:app="http://schemas.android.com/apk/res-auto"
-             android:id="@+id/nav_graph.xml">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/familyLinkedRidersFragment">
 
+    <fragment
+        android:id="@+id/familyLinkedRidersFragment"
+        android:name="com.example.helmethero.fragments.family.FamilyLinkedRidersFragment"
+        android:label="Linked Riders" >
+
+        <action
+            android:id="@+id/action_familyLinkedRidersFragment_to_familyTripListFragment"
+            app:destination="@id/familyTripListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/familyTripListFragment"
+        android:name="com.example.helmethero.fragments.family.FamilyTripListFragment"
+        android:label="Trip History" >
+
+        <argument
+            android:name="riderUid"
+            app:argType="string" />
+
+        <argument
+            android:name="riderName"
+            app:argType="string" />
+    </fragment>
 </navigation>

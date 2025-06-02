@@ -12,11 +12,13 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
-import com.google.firebase.messaging.FirebaseMessagingService;
-import com.google.firebase.messaging.RemoteMessage;
+import com.example.helmethero.activities.FamilyHomeActivity;
+import com.example.helmethero.activities.RiderHomeActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
@@ -28,7 +30,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (uid != null) {
             DatabaseReference ref = FirebaseDatabase.getInstance().getReference("Users").child(uid).child("fcmToken");
             ref.setValue(token);
-            android.util.Log.d("MyFirebaseMsgService", "FCM Token updated: " + token);
         }
     }
 
@@ -36,55 +37,46 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
-        // Dynamic title/message from FCM payload
         String title = "HelmetHero";
         String message = "You have a new notification!";
         String googleMapsUrl = null;
+        String userRole = "Family Member"; // Default
 
-        // 1. Prefer Data payload if present
         if (remoteMessage.getData() != null && !remoteMessage.getData().isEmpty()) {
-            if (remoteMessage.getData().containsKey("title")) {
+            if (remoteMessage.getData().containsKey("title"))
                 title = remoteMessage.getData().get("title");
-            }
-            if (remoteMessage.getData().containsKey("body")) {
+            if (remoteMessage.getData().containsKey("body"))
                 message = remoteMessage.getData().get("body");
-            }
-            if (remoteMessage.getData().containsKey("googleMapsUrl")) {
+            if (remoteMessage.getData().containsKey("googleMapsUrl"))
                 googleMapsUrl = remoteMessage.getData().get("googleMapsUrl");
-            }
-            // Fallback for previous function style: if riderName exists, update title/message
-            if (remoteMessage.getData().containsKey("riderName")) {
-                String riderName = remoteMessage.getData().get("riderName");
-                if (remoteMessage.getData().containsKey("sosType")) {
-                    title = "SOS: " + riderName;
-                    message = riderName + " has triggered an SOS alert! Tap to view location.";
-                }
-            }
-            // Trip start/end, link/unlink can just use title/body sent from backend
+            if (remoteMessage.getData().containsKey("userRole"))
+                userRole = remoteMessage.getData().get("userRole");
         }
 
-        // 2. Use notification payload (if any) if not overridden above
         if (remoteMessage.getNotification() != null) {
-            if (remoteMessage.getNotification().getTitle() != null) {
+            if (remoteMessage.getNotification().getTitle() != null)
                 title = remoteMessage.getNotification().getTitle();
-            }
-            if (remoteMessage.getNotification().getBody() != null) {
+            if (remoteMessage.getNotification().getBody() != null)
                 message = remoteMessage.getNotification().getBody();
-            }
         }
 
-        showNotification(title, message, googleMapsUrl);
+        showNotification(title, message, googleMapsUrl, userRole);
     }
 
-    private void showNotification(String title, String message, String googleMapsUrl) {
+    private void showNotification(String title, String message, String googleMapsUrl, String userRole) {
         Intent intent;
+
         if (googleMapsUrl != null && !googleMapsUrl.isEmpty()) {
-            // Direct to Google Maps if present
             intent = new Intent(Intent.ACTION_VIEW, Uri.parse(googleMapsUrl));
         } else {
-            // Fallback: open app home
-            intent = new Intent(this, com.example.helmethero.activities.FamilyHomeActivity.class);
+            // Navigate to home screen based on user role
+            if ("Rider".equalsIgnoreCase(userRole)) {
+                intent = new Intent(this, RiderHomeActivity.class);
+            } else {
+                intent = new Intent(this, FamilyHomeActivity.class);
+            }
         }
+
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -106,7 +98,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // For Android O+
+        // For Android O and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     channelId,
@@ -115,6 +107,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             );
             notificationManager.createNotificationChannel(channel);
         }
+
         notificationManager.notify(0, notificationBuilder.build());
     }
 }

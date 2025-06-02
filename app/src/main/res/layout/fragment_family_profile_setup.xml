@@ -20,7 +20,7 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginBottom="16dp"
-            android:textColor="#1E2D60" />
+            android:textColor="@color/black" />
 
         <!-- 🖼️ Profile Image -->
         <ImageView
@@ -76,46 +76,51 @@
                 android:inputType="phone" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 📧 Email (Read-only) -->
+        <!-- 📧 Email (Read-only, visually distinct) -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:boxBackgroundMode="outline"
-            app:boxBackgroundColor="@android:color/white"
-            app:endIconMode="none">
+            app:boxBackgroundColor="#EBECF0"
+            app:endIconDrawable="@drawable/ic_lock_24"
+            app:endIconMode="custom"
+            app:endIconContentDescription="Read only">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Email"
                 android:enabled="false"
                 android:focusable="false"
-                android:textColor="@android:color/black"
-                android:textSize="14sp"
-                android:inputType="textEmailAddress" />
+                android:hint="Email"
+                android:inputType="textEmailAddress"
+                android:textColor="#9E9E9E"
+                android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 🧷 Role (Read-only) -->
+        <!-- 🧷 Role (Read-only, visually distinct) -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="20dp"
             app:boxBackgroundMode="outline"
-            app:boxBackgroundColor="@android:color/white"
-            app:endIconMode="none">
+            app:boxBackgroundColor="#EBECF0"
+            app:endIconDrawable="@drawable/ic_lock_24"
+            app:endIconMode="custom"
+            app:endIconContentDescription="Read only">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editRole"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Role"
-                android:enabled="false"
-                android:focusable="false"
-                android:textColor="@android:color/black"
-                android:textSize="14sp" />
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editRole"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Role"
+            android:enabled="false"
+            android:focusable="false"
+            android:textColor="#9E9E9E"
+            android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
+
 
         <!-- ✅ Save -->
         <com.google.android.material.button.MaterialButton
@@ -125,7 +130,7 @@
             android:text="Save Changes"
             android:textAllCaps="true"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="12sp"
             app:cornerRadius="12dp"
             android:backgroundTint="#1E2D60"
             android:layout_marginBottom="12dp" />
@@ -138,7 +143,7 @@
             android:text="Cancel"
             android:textAllCaps="true"
             android:textColor="#1E2D60"
-            android:textSize="14sp"
+            android:textSize="12sp"
             app:cornerRadius="12dp"
             android:backgroundTint="#C5C6C7" />
 

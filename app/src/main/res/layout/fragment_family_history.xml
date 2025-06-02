@@ -12,7 +12,7 @@
         android:text="Your Linked Riders"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:textColor="#1E2D60"
+        android:textColor="@color/black"
         android:gravity="center"
         android:layout_marginBottom="16dp" />
 

@@ -12,7 +12,7 @@
         android:orientation="vertical"
         android:gravity="center_horizontal">
 
-        <!-- 🧑 Title -->
+        <!-- Title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -20,19 +20,37 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginBottom="16dp"
-            android:textColor="#1E2D60" />
+            android:textColor="@color/black" />
 
-        <!-- 🖼️ Profile Image -->
+        <!-- Profile Image -->
         <ImageView
             android:id="@+id/imgProfile"
             android:layout_width="120dp"
             android:layout_height="120dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="8dp"
             android:src="@drawable/ic_profile"
             android:background="@drawable/circle_background"
             android:scaleType="centerCrop" />
 
-        <!-- 🧾 Name -->
+        <!-- Show Invite Code Button with QR Icon on the right -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnShowCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Show Invite Code"
+            android:textColor="@android:color/white"
+            android:textAllCaps="false"
+            android:textSize="11sp"
+            android:backgroundTint="#1E2D60"
+            app:cornerRadius="20dp"
+            app:icon="@drawable/ic_qr_code_24"
+            app:iconTint="@android:color/white"
+            app:iconPadding="8dp"
+            app:iconGravity="textEnd"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Full Name -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -54,7 +72,7 @@
                 android:inputType="textPersonName" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 📱 Phone -->
+        <!-- Phone Number -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -76,35 +94,39 @@
                 android:inputType="phone" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 📧 Email (Read-only) -->
+        <!-- Email (Read-only) -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:boxBackgroundMode="outline"
-            app:boxBackgroundColor="@android:color/white"
-            app:endIconMode="none">
+            app:boxBackgroundColor="#EBECF0"
+            app:endIconDrawable="@drawable/ic_lock_24"
+            app:endIconMode="custom"
+            app:endIconContentDescription="Read only">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Email"
                 android:enabled="false"
                 android:focusable="false"
-                android:textColor="@android:color/black"
-                android:textSize="14sp"
-                android:inputType="textEmailAddress" />
+                android:hint="Email"
+                android:inputType="textEmailAddress"
+                android:textColor="#9E9E9E"
+                android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 🧷 Role (Read-only) -->
+        <!-- Role (Read-only) -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="20dp"
             app:boxBackgroundMode="outline"
-            app:boxBackgroundColor="@android:color/white"
-            app:endIconMode="none">
+            app:boxBackgroundColor="#EBECF0"
+            app:endIconDrawable="@drawable/ic_lock_24"
+            app:endIconMode="custom"
+            app:endIconContentDescription="Read only">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editRole"
@@ -113,11 +135,11 @@
                 android:hint="Role"
                 android:enabled="false"
                 android:focusable="false"
-                android:textColor="@android:color/black"
+                android:textColor="#9E9E9E"
                 android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- ✅ Save -->
+        <!-- Save Changes -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveProfile"
             android:layout_width="match_parent"
@@ -125,12 +147,12 @@
             android:text="Save Changes"
             android:textAllCaps="true"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="12sp"
             app:cornerRadius="12dp"
             android:backgroundTint="#1E2D60"
             android:layout_marginBottom="12dp" />
 
-        <!-- ❌ Cancel -->
+        <!-- Cancel -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancelProfile"
             android:layout_width="match_parent"
@@ -138,7 +160,7 @@
             android:text="Cancel"
             android:textAllCaps="true"
             android:textColor="#1E2D60"
-            android:textSize="14sp"
+            android:textSize="12sp"
             app:cornerRadius="12dp"
             android:backgroundTint="#C5C6C7" />
 

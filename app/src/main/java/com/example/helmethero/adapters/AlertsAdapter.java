@@ -25,12 +25,10 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
     private final List<Alert> alertList;
     private final AlertSeenListener listener;
 
-    // AlertSeenListener interface for parent to react on "Seen"
     public interface AlertSeenListener {
         void onAlertSeen(String alertId);
     }
 
-    // Use this constructor in FamilyAlertFragment
     public AlertsAdapter(List<Alert> alertList, AlertSeenListener listener) {
         this.alertList = alertList;
         this.listener = listener;
@@ -76,17 +74,15 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
         String status = alert.getStatus() != null ? alert.getStatus().toUpperCase() : "-";
         holder.textAlertStatus.setText(status);
 
-        // Handle clickable "SEEN" status
         if ("NEW".equalsIgnoreCase(status)) {
             holder.textAlertStatus.setBackgroundResource(R.drawable.bg_status_badge);
             holder.textAlertStatus.setTextColor(Color.WHITE);
             holder.textAlertStatus.setClickable(true);
             holder.textAlertStatus.setOnClickListener(v -> {
-                // Notify parent fragment to mark as seen (to update badge)
                 if (listener != null) {
                     listener.onAlertSeen(alert.getId());
                 }
-                alert.setStatus("SEEN"); // Local update for instant UI
+                alert.setStatus("SEEN");
                 int pos = holder.getAdapterPosition();
                 if (pos != RecyclerView.NO_POSITION) {
                     notifyItemChanged(pos);
@@ -100,15 +96,22 @@ public class AlertsAdapter extends RecyclerView.Adapter<AlertsAdapter.AlertViewH
             holder.textAlertStatus.setClickable(false);
         }
 
-        // Tap to open location in Google Maps
+        // **UPDATE HERE: Tap on itemView also marks as SEEN if status is NEW**
         holder.itemView.setOnClickListener(v -> {
+            // 1. Mark as seen if still NEW
+            if ("NEW".equalsIgnoreCase(status) && listener != null) {
+                listener.onAlertSeen(alert.getId());
+                alert.setStatus("SEEN");
+                notifyItemChanged(holder.getAdapterPosition());
+            }
+            // 2. (Original) Open Google Maps
             String locationStr = alert.getLocation();
             if (locationStr != null && locationStr.contains(",")) {
                 String[] locParts = locationStr.split(",");
                 try {
                     double lat = Double.parseDouble(locParts[0]);
                     double lng = Double.parseDouble(locParts[1]);
-                    String label = alert.getRiderName() + " Impact Location";
+                    String label = (alert.getRiderName() == null ? "" : alert.getRiderName()) + " Impact Location";
                     String uri = "geo:" + lat + "," + lng + "?q=" + lat + "," + lng + "(" + label + ")";
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
                     intent.setPackage("com.google.android.apps.maps");

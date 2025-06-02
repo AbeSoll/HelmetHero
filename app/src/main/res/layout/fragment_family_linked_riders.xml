@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#DDE9FF">
@@ -11,17 +12,42 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Title -->
-        <TextView
-            android:id="@+id/textLinkedRidersTitle"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Your Riders"
-            android:textStyle="bold"
-            android:textSize="20sp"
-            android:textColor="#1E2D60"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="12dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp">
+
+            <!-- Title -->
+            <TextView
+                android:id="@+id/textLinkedRidersTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Your Riders"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:textColor="@color/black" />
+
+            <!-- Add Rider Button with Plus Icon -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddRider"
+                style="@style/Widget.MaterialComponents.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:text="Add Rider"
+                android:textColor="@android:color/white"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                app:icon="@drawable/ic_add_24"
+                app:iconTint="@android:color/white"
+                app:iconPadding="8dp"
+                app:cornerRadius="20dp"
+                android:backgroundTint="#1E2D60" />
+        </LinearLayout>
 
         <!-- RecyclerView Rider List -->
         <androidx.recyclerview.widget.RecyclerView
@@ -31,6 +57,20 @@
             android:layout_weight="1"
             android:clipToPadding="false"
             android:scrollbars="vertical" />
+
+        <!-- Unlink Button (Hidden by default) -->
+        <Button
+            android:id="@+id/btnUnlinkSelected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unlink Selected"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:textColor="@android:color/white"
+            android:backgroundTint="#C62828"
+            android:visibility="gone"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"/>
     </LinearLayout>
 
     <!-- Empty State (hidden by default) -->
