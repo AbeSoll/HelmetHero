@@ -3,8 +3,10 @@ package com.example.helmethero;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -20,7 +22,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.util.Map;
+
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
+
+    private static final String SOS_CHANNEL_ID = "sos_emergency_channel";
+    private static final String NORMAL_CHANNEL_ID = "helmethero_channel";
 
     @Override
     public void onNewToken(@NonNull String token) {
@@ -34,47 +41,70 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     @Override
-    public void onMessageReceived(RemoteMessage remoteMessage) {
+    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
+        createNotificationChannels();
 
-        String title = "HelmetHero";
-        String message = "You have a new notification!";
-        String googleMapsUrl = null;
-        String userRole = "Family Member"; // Default
+        Map<String, String> data = remoteMessage.getData();
+        if (data == null || data.isEmpty()) return;
 
-        if (remoteMessage.getData() != null && !remoteMessage.getData().isEmpty()) {
-            if (remoteMessage.getData().containsKey("title"))
-                title = remoteMessage.getData().get("title");
-            if (remoteMessage.getData().containsKey("body"))
-                message = remoteMessage.getData().get("body");
-            if (remoteMessage.getData().containsKey("googleMapsUrl"))
-                googleMapsUrl = remoteMessage.getData().get("googleMapsUrl");
-            if (remoteMessage.getData().containsKey("userRole"))
-                userRole = remoteMessage.getData().get("userRole");
-        }
+        String title = data.getOrDefault("title", "HelmetHero");
+        String message = data.getOrDefault("body", "You have a new notification!");
+        String googleMapsUrl = data.get("googleMapsUrl");
+        String userRole = data.getOrDefault("userRole", "Family Member");
+        String sosType = data.get("sosType");
 
-        if (remoteMessage.getNotification() != null) {
-            if (remoteMessage.getNotification().getTitle() != null)
-                title = remoteMessage.getNotification().getTitle();
-            if (remoteMessage.getNotification().getBody() != null)
-                message = remoteMessage.getNotification().getBody();
-        }
-
-        showNotification(title, message, googleMapsUrl, userRole);
+        showNotification(title, message, googleMapsUrl, userRole, sosType);
     }
 
-    private void showNotification(String title, String message, String googleMapsUrl, String userRole) {
+    private void createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager notificationManager =
+                    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+            // SOS Emergency Channel
+            Uri sosUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/emergency_sos");
+            AudioAttributes sosAudioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
+                    .build();
+
+            NotificationChannel sosChannel = new NotificationChannel(
+                    SOS_CHANNEL_ID,
+                    "🚨 SOS Emergency Alerts",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            sosChannel.setSound(sosUri, sosAudioAttributes);
+            sosChannel.setDescription("Critical emergency alerts with custom sound");
+            sosChannel.enableVibration(true);
+            sosChannel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
+            sosChannel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            sosChannel.setBypassDnd(true);
+            notificationManager.createNotificationChannel(sosChannel);
+
+            // Normal Notification Channel
+            Uri defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            NotificationChannel normalChannel = new NotificationChannel(
+                    NORMAL_CHANNEL_ID,
+                    "HelmetHero Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            normalChannel.setSound(defaultUri, null);
+            normalChannel.setDescription("General app notifications");
+            notificationManager.createNotificationChannel(normalChannel);
+        }
+    }
+
+    private void showNotification(String title, String message, String googleMapsUrl, String userRole, String sosType) {
         Intent intent;
 
         if (googleMapsUrl != null && !googleMapsUrl.isEmpty()) {
             intent = new Intent(Intent.ACTION_VIEW, Uri.parse(googleMapsUrl));
         } else {
-            // Navigate to home screen based on user role
-            if ("Rider".equalsIgnoreCase(userRole)) {
-                intent = new Intent(this, RiderHomeActivity.class);
-            } else {
-                intent = new Intent(this, FamilyHomeActivity.class);
-            }
+            intent = "Rider".equalsIgnoreCase(userRole)
+                    ? new Intent(this, RiderHomeActivity.class)
+                    : new Intent(this, FamilyHomeActivity.class);
         }
 
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -83,31 +113,28 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 this, 0, intent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        String channelId = "helmethero_channel";
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        String channelId = "SOS".equalsIgnoreCase(sosType) ? SOS_CHANNEL_ID : NORMAL_CHANNEL_ID;
 
-        NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(this, channelId)
-                        .setSmallIcon(R.drawable.ic_helmethero_logo)
-                        .setContentTitle(title)
-                        .setContentText(message)
-                        .setAutoCancel(true)
-                        .setSound(defaultSoundUri)
-                        .setContentIntent(pendingIntent);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_helmethero_logo)
+                .setContentTitle("SOS".equalsIgnoreCase(sosType) ? "🚨 " + title : title)
+                .setContentText(message)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority("SOS".equalsIgnoreCase(sosType)
+                        ? NotificationCompat.PRIORITY_MAX
+                        : NotificationCompat.PRIORITY_HIGH);
+
+        if ("SOS".equalsIgnoreCase(sosType)) {
+            builder.setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .setVibrate(new long[]{0, 1000, 500, 1000})
+                    .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
+                    .setFullScreenIntent(pendingIntent, true);
+        }
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // For Android O and above
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    channelId,
-                    "HelmetHero Notifications",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        notificationManager.notify(0, notificationBuilder.build());
+        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
     }
 }

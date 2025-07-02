@@ -1,5 +1,6 @@
 package com.example.helmethero.fragments.rider;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ClipData;
@@ -161,6 +162,8 @@ public class RiderProfileSetupFragment extends Fragment {
         });
     }
 
+    // In your saveUserProfile() method
+    @SuppressLint("SetTextI18n")
     private void saveUserProfile() {
         String name = inputName.getText().toString().trim();
         String phone = inputPhone.getText().toString().trim();
@@ -174,10 +177,31 @@ public class RiderProfileSetupFragment extends Fragment {
         userRef.child("phone").setValue(phone);
 
         if (selectedImageUri != null) {
-            ProgressDialog dialog = new ProgressDialog(getContext());
-            dialog.setMessage("Uploading profile image...");
-            dialog.setCancelable(false);
+            // --- Start of corrected block ---
+
+            // 1. Create a modern AlertDialog for progress
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setCancelable(false); // User cannot dismiss it
+
+            // Create a horizontal layout to hold the ProgressBar and a message
+            LinearLayout linearLayout = new LinearLayout(getContext());
+            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+            linearLayout.setPadding(30, 30, 30, 30);
+            linearLayout.setGravity(Gravity.CENTER);
+
+            ProgressBar progressBar = new ProgressBar(getContext());
+            linearLayout.addView(progressBar);
+
+            TextView messageView = new TextView(getContext());
+            messageView.setText("Uploading profile image...");
+            messageView.setPadding(20, 0, 0, 0);
+            linearLayout.addView(messageView);
+
+            builder.setView(linearLayout);
+            AlertDialog dialog = builder.create();
             dialog.show();
+
+            // --- End of corrected block ---
 
             StorageReference imageRef = storageRef.child(currentUser.getUid() + "/profile.jpg");
 
@@ -185,12 +209,12 @@ public class RiderProfileSetupFragment extends Fragment {
                     .addOnSuccessListener(taskSnapshot ->
                             imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                                 userRef.child("profileImageUrl").setValue(uri.toString());
-                                dialog.dismiss();
+                                dialog.dismiss(); // Dismiss the modern dialog
                                 Toast.makeText(getContext(), "✅ Profile Updated!", Toast.LENGTH_SHORT).show();
                             })
                     )
                     .addOnFailureListener(e -> {
-                        dialog.dismiss();
+                        dialog.dismiss(); // Dismiss the modern dialog
                         Toast.makeText(getContext(), "❌ Failed to upload image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
         } else {
@@ -199,6 +223,7 @@ public class RiderProfileSetupFragment extends Fragment {
     }
 
     // Dialog for Invite Code/QR (improved chip tab look)
+    @SuppressLint("SetTextI18n")
     private void showInviteCodeDialog() {
         Context context = requireContext();
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();

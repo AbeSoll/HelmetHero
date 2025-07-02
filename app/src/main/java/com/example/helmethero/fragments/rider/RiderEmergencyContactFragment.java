@@ -1,5 +1,6 @@
 package com.example.helmethero.fragments.rider;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.*;
@@ -74,6 +75,7 @@ public class RiderEmergencyContactFragment extends Fragment {
                 .show();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void unlinkSelectedContacts() {
         String riderUid = currentUser.getUid();
 
@@ -97,6 +99,7 @@ public class RiderEmergencyContactFragment extends Fragment {
         btnUnlinkSelected.setVisibility(View.GONE);
 
         riderRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @SuppressLint("NotifyDataSetChanged")
             @Override
             public void onDataChange(@NonNull DataSnapshot contactsSnap) {
                 List<String> linkedFamilyUids = new ArrayList<>();
@@ -117,6 +120,7 @@ public class RiderEmergencyContactFragment extends Fragment {
                 final int[] fetchCount = {0};
                 for (String familyUid : linkedFamilyUids) {
                     usersRef.child(familyUid).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @SuppressLint("NotifyDataSetChanged")
                         @Override
                         public void onDataChange(@NonNull DataSnapshot userSnap) {
                             if (userSnap.exists()) {
@@ -132,6 +136,7 @@ public class RiderEmergencyContactFragment extends Fragment {
                             }
                         }
 
+                        @SuppressLint("NotifyDataSetChanged")
                         @Override
                         public void onCancelled(@NonNull DatabaseError error) {
                             fetchCount[0]++;
@@ -143,6 +148,7 @@ public class RiderEmergencyContactFragment extends Fragment {
                 }
             }
 
+            @SuppressLint("NotifyDataSetChanged")
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 toggleEmptyState(true);

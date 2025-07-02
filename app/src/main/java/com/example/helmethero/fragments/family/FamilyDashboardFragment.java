@@ -1,5 +1,6 @@
 package com.example.helmethero.fragments.family;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
@@ -26,6 +27,7 @@ public class FamilyDashboardFragment extends Fragment {
     private DatabaseReference databaseRef;
     private final Map<String, ValueEventListener> activeListeners = new HashMap<>();
 
+    @SuppressLint("SetTextI18n")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,

@@ -224,6 +224,7 @@ public class FamilyTripListFragment extends Fragment {
 
         tripsRef.orderByChild("date").equalTo(dateKey)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @SuppressLint("NotifyDataSetChanged")
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         tripList.clear();

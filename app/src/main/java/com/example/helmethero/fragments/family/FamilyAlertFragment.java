@@ -98,6 +98,7 @@ public class FamilyAlertFragment extends Fragment implements AlertsAdapter.Alert
         DatabaseReference ridersRef = FirebaseDatabase.getInstance().getReference("Riders");
 
         ridersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @SuppressLint("NotifyDataSetChanged")
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 List<String> linkedRiderUids = new ArrayList<>();
@@ -116,6 +117,7 @@ public class FamilyAlertFragment extends Fragment implements AlertsAdapter.Alert
                 fetchAllAlerts(linkedRiderUids);
             }
 
+            @SuppressLint("NotifyDataSetChanged")
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 alertList.clear();
@@ -135,6 +137,7 @@ public class FamilyAlertFragment extends Fragment implements AlertsAdapter.Alert
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void fetchAllAlerts(List<String> riderUids) {
         alertList.clear();
         alertsAdapter.notifyDataSetChanged();

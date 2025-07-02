@@ -50,8 +50,8 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
 
     private GoogleMap map;
     private ProgressBar progressBarLoading;
-    private CardView statusMessageCard;     // <-- CardView for top message
-    private TextView textStatusMessage;     // <-- Status text at the top
+    private CardView statusMessageCard;
+    private TextView textStatusMessage;
     private FloatingActionButton btnRecenterMap;
     private final Map<String, Marker> riderMarkers = new HashMap<>();
     private final Map<String, Boolean> riderTripActive = new HashMap<>();
@@ -65,8 +65,8 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
 
         progressBarLoading = view.findViewById(R.id.progressBarLoading);
         btnRecenterMap = view.findViewById(R.id.btnRecenterMap);
-        statusMessageCard = view.findViewById(R.id.statusMessageCard);    // <-- CardView
-        textStatusMessage = view.findViewById(R.id.textStatusMessage);    // <-- TextView
+        statusMessageCard = view.findViewById(R.id.statusMessageCard);
+        textStatusMessage = view.findViewById(R.id.textStatusMessage);
 
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.familyMap);
@@ -182,6 +182,7 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
 
                 setCustomProfileMarker(riderId, pos, tripActive != null && tripActive);
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 showStatusMessage("Failed to load live tracking data.");
@@ -224,6 +225,7 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
                                     Bitmap markerBitmap = createBitmapFromView(markerView);
                                     animateOrUpdateMarker(riderId, pos, markerBitmap);
                                 }
+
                                 @Override
                                 public void onLoadCleared(@Nullable Drawable placeholder) { }
                             });
@@ -238,6 +240,7 @@ public class FamilyRealTimeFragment extends Fragment implements OnMapReadyCallba
                     animateOrUpdateMarker(riderId, pos, markerBitmap);
                 }
             }
+
             @Override public void onCancelled(@NonNull DatabaseError error) { }
         });
     }

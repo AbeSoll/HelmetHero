@@ -50,9 +50,9 @@ public class LocationForegroundService extends Service {
             return;
         }
         @SuppressLint("MissingPermission")
-        LocationRequest request = LocationRequest.create()
-                .setInterval(1000)
-                .setPriority(Priority.PRIORITY_HIGH_ACCURACY);
+        // Recommended way using the Builder
+        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                .build();
 
         locationCallback = new LocationCallback() {
             @Override

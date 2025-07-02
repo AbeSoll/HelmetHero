@@ -109,7 +109,7 @@ public class RiderDetailBottomSheet extends BottomSheetDialogFragment {
                 // SAFE conversion for speed
                 Object speedObj = snapshot.child("speed").getValue();
                 String speed = speedObj != null ? String.valueOf(speedObj) : "0.0";
-                tvSpeed.setText("Speed: " + speed + " km/h");
+                tvSpeed.setText("Speed: " + speed);
 
                 // SAFE conversion for location
                 Object locObj = snapshot.child("location").getValue();

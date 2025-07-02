@@ -1,5 +1,6 @@
 package com.example.helmethero.fragments.rider;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.ImageView;
@@ -26,8 +27,8 @@ public class RiderHistoryFragment extends Fragment {
 
     private DateAdapter dateAdapter;
     private TripHistoryAdapter tripHistoryAdapter;
-    private List<Trip> tripList = new ArrayList<>();
-    private List<Integer> dayList = new ArrayList<>();
+    private final List<Trip> tripList = new ArrayList<>();
+    private final List<Integer> dayList = new ArrayList<>();
     private RecyclerView recyclerDatePicker, recyclerTripHistory;
     private TextView textMonthPicker;
     private LinearLayout layoutEmptyState, layoutMonthPicker;
@@ -216,6 +217,7 @@ public class RiderHistoryFragment extends Fragment {
 
         tripsRef.orderByChild("date").equalTo(dateKey)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @SuppressLint("NotifyDataSetChanged")
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         tripList.clear();
@@ -224,7 +226,7 @@ public class RiderHistoryFragment extends Fragment {
                             if (trip != null) tripList.add(trip);
                         }
                         // SORT DESCENDING: latest first
-                        Collections.sort(tripList, (t1, t2) -> {
+                        tripList.sort((t1, t2) -> {
                             // Assuming you store timestamp as yyyy-MM-dd HH:mm:ss, or use long/int
                             return t2.getTimestamp().compareTo(t1.getTimestamp());
                         });

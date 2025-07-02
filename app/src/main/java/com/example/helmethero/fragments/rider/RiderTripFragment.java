@@ -13,6 +13,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -29,6 +30,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
@@ -36,39 +39,57 @@ import androidx.fragment.app.Fragment;
 
 import com.example.helmethero.R;
 import com.example.helmethero.activities.RiderHomeActivity;
+import com.example.helmethero.models.Alert;
 import com.example.helmethero.services.LocationForegroundService;
 import com.example.helmethero.utils.HelmetConnectionManager;
 import com.google.android.gms.location.*;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
+    // Map and Location variables
     private GoogleMap map;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
+    private Location lastLocation;
+    private final ArrayList<LatLng> routePoints = new ArrayList<>();
+    private boolean isFollowingPointer = true;
 
+    // UI Elements
     private TextView durationText, distanceText, speedText;
     private TextView helmetStatusText;
     private View btnRecenter;
+    private ProgressBar loadingSos;
 
+    // Trip State variables
     private long startTimeMillis;
     private double totalDistanceKm = 0.0;
-    private Location lastLocation;
-    private final ArrayList<LatLng> routePoints = new ArrayList<>();
-
-    private boolean isFollowingPointer = true;
-
     private final Handler durationHandler = new Handler(Looper.getMainLooper());
+    private String riderUid;
+    private SharedPreferences prefs;
+
+    // --- NEW: SOS Countdown Timer ---
+    private CountDownTimer sosCountdownTimer;
+
+    // Permission Launchers
+    private ActivityResultLauncher<String[]> foregroundServicePermissionLauncher;
+    private ActivityResultLauncher<String[]> mapLocationPermissionLauncher;
+
     private final Runnable durationRunnable = new Runnable() {
         @Override
         public void run() {
@@ -77,21 +98,25 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         }
     };
 
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
-    private static final int REQUEST_CODE_FOREGROUND_LOCATION = 2024;
-    private String riderUid;
+    public RiderTripFragment() {
+        // Required empty public constructor
+    }
 
-    private SharedPreferences prefs;
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    public RiderTripFragment() {}
+        prefs = requireActivity().getSharedPreferences("HelmetHeroPrefs", Context.MODE_PRIVATE);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
+
+        initializePermissionLaunchers();
+    }
 
     @SuppressLint("SetTextI18n")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rider_trip, container, false);
-
-        prefs = requireActivity().getSharedPreferences("HelmetHeroPrefs", Context.MODE_PRIVATE);
 
         // Setup Google Map
         if (getChildFragmentManager().findFragmentById(R.id.map_container) == null) {
@@ -102,35 +127,7 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
             mapFragment.getMapAsync(this);
         }
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
-
-        // --------- UPDATED PERMISSION CHECK FOR ANDROID 14+ ---------
-        if (Build.VERSION.SDK_INT >= 34) {
-            if (
-                    ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-                            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.FOREGROUND_SERVICE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissions(
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.FOREGROUND_SERVICE_LOCATION},
-                        REQUEST_CODE_FOREGROUND_LOCATION
-                );
-            } else {
-                startForegroundLocationService();
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (
-                    ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissions(
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        REQUEST_CODE_FOREGROUND_LOCATION
-                );
-            } else {
-                startForegroundLocationService();
-            }
-        } else {
-            startForegroundLocationService();
-        }
+        checkAndRequestForegroundServicePermission();
 
         // View bindings
         durationText = view.findViewById(R.id.textDuration);
@@ -140,8 +137,7 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         Button endTripButton = view.findViewById(R.id.btnEndTrip);
         Button sosButton = view.findViewById(R.id.btnSos);
         btnRecenter = view.findViewById(R.id.btnRecenter);
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        ProgressBar loadingSos = view.findViewById(R.id.loadingSos);
+        loadingSos = view.findViewById(R.id.loadingSos);
 
         btnRecenter.setVisibility(View.GONE);
 
@@ -166,6 +162,46 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         riderUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         setTripActiveFlag(true);
 
+        // Trip Resumption Logic
+        handleTripResumption();
+
+        durationHandler.post(durationRunnable);
+
+        // End Trip Logic
+        endTripButton.setOnClickListener(v -> showEndTripDialog());
+
+        // Back Press Logic
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Toast.makeText(getContext(), "Please end your trip before exiting.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // --- UPDATED: SOS Button Logic ---
+        sosButton.setOnClickListener(v -> {
+            // Pulse and vibrate for immediate feedback
+            ObjectAnimator pulse = ObjectAnimator.ofPropertyValuesHolder(v,
+                    PropertyValuesHolder.ofFloat("scaleX", 1f, 1.1f, 1f),
+                    PropertyValuesHolder.ofFloat("scaleY", 1f, 1.1f, 1f));
+            pulse.setDuration(300);
+            pulse.setInterpolator(new android.view.animation.CycleInterpolator(1));
+            pulse.start();
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Vibrator vibrator = (Vibrator) requireContext().getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null && vibrator.hasVibrator()) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE));
+                }
+            }
+            // Show the new countdown dialog
+            showSosCountdownDialog();
+        });
+
+        return view;
+    }
+
+    private void handleTripResumption() {
         boolean isResumeTrip = false;
         long resumeTripStartSystemTime = 0L;
         double resumeTripDistance = 0.0;
@@ -191,140 +227,207 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
             totalDistanceKm = 0.0;
             routePoints.clear();
         }
-
-        durationHandler.post(durationRunnable);
-
-        // End Trip Logic
-        endTripButton.setOnClickListener(v -> {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("End Trip?")
-                    .setMessage("Are you sure you want to end this trip?")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        long duration = SystemClock.elapsedRealtime() - startTimeMillis;
-                        double avgSpeed = totalDistanceKm / (duration / 3600000.0);
-
-                        setTripActiveFlag(false);
-                        clearTripStatePrefs();
-
-                        requireActivity().stopService(new Intent(requireContext(), LocationForegroundService.class));
-
-                        RiderTripSummaryFragment summaryFragment =
-                                RiderTripSummaryFragment.newInstance(duration, totalDistanceKm, avgSpeed, routePoints);
-
-                        requireActivity().getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.fragment_container, summaryFragment)
-                                .addToBackStack(null)
-                                .commit();
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        });
-
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                Toast.makeText(getContext(), "Please end your trip before exiting.", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        sosButton.setOnClickListener(v -> {
-            ObjectAnimator pulse = ObjectAnimator.ofPropertyValuesHolder(
-                    v,
-                    PropertyValuesHolder.ofFloat("scaleX", 1f, 1.1f, 1f),
-                    PropertyValuesHolder.ofFloat("scaleY", 1f, 1.1f, 1f)
-            );
-            pulse.setDuration(300);
-            pulse.setInterpolator(new android.view.animation.CycleInterpolator(1));
-            pulse.start();
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Vibrator vibrator = (Vibrator) requireContext().getSystemService(Context.VIBRATOR_SERVICE);
-                if (vibrator != null && vibrator.hasVibrator()) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE));
-                }
-            }
-
-            loadingSos.setVisibility(View.VISIBLE);
-            String userUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            DatabaseReference ref = FirebaseDatabase.getInstance()
-                    .getReference("Riders").child(userUid).child("liveTracking");
-
-            java.util.Map<String, Object> sosData = new java.util.HashMap<>();
-            sosData.put("sosAlert", true);
-            sosData.put("alert", "IMPACT");
-            String timeNow = getCurrentTime();
-            sosData.put("alertTime", timeNow);
-
-            String locationStr;
-            if (lastLocation != null) {
-                double lat = lastLocation.getLatitude();
-                double lng = lastLocation.getLongitude();
-                locationStr = lat + "," + lng;
-            } else {
-                locationStr = "0,0";
-                Toast.makeText(requireContext(), "Location unavailable. Using default coordinates.", Toast.LENGTH_SHORT).show();
-            }
-            sosData.put("location", locationStr);
-
-            ref.updateChildren(sosData).addOnCompleteListener(task -> {
-                loadingSos.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), "SOS sent to Firebase!", Toast.LENGTH_SHORT).show();
-            });
-
-            DatabaseReference riderRef = FirebaseDatabase.getInstance()
-                    .getReference("Riders").child(userUid);
-
-            riderRef.child("emergencyContacts").addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
-                    for (com.google.firebase.database.DataSnapshot contactSnap : snapshot.getChildren()) {
-                        String familyUid = contactSnap.getKey();
-                        if (familyUid == null) continue;
-
-                        String alertId = FirebaseDatabase.getInstance().getReference("Alerts").child(familyUid).push().getKey();
-                        if (alertId == null) continue;
-
-                        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userUid);
-                        userRef.addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
-                            @Override
-                            public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot userSnap) {
-                                String riderName = userSnap.child("name").getValue(String.class);
-                                String profileImageUrl = userSnap.child("profileImageUrl").getValue(String.class);
-
-                                com.example.helmethero.models.Alert alert = new com.example.helmethero.models.Alert(
-                                        alertId,
-                                        userUid,
-                                        riderName,
-                                        profileImageUrl,
-                                        "IMPACT",
-                                        timeNow,
-                                        locationStr,
-                                        "NEW",
-                                        false
-                                );
-
-                                FirebaseDatabase.getInstance()
-                                        .getReference("Alerts")
-                                        .child(familyUid)
-                                        .child(alertId)
-                                        .setValue(alert);
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) { }
-                        });
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) { }
-            });
-        });
-
-        return view;
     }
 
-    // Foreground Location Service launcher
+    private void showEndTripDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("End Trip?")
+                .setMessage("Are you sure you want to end this trip?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    long duration = SystemClock.elapsedRealtime() - startTimeMillis;
+                    double avgSpeed = (duration > 0) ? totalDistanceKm / (duration / 3600000.0) : 0.0;
+
+                    setTripActiveFlag(false);
+                    clearTripStatePrefs();
+
+                    requireActivity().stopService(new Intent(requireContext(), LocationForegroundService.class));
+
+                    RiderTripSummaryFragment summaryFragment =
+                            RiderTripSummaryFragment.newInstance(duration, totalDistanceKm, avgSpeed, routePoints);
+
+                    requireActivity().getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, summaryFragment)
+                            .addToBackStack(null)
+                            .commit();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    // --- NEW: Method to show the SOS countdown dialog ---
+    private void showSosCountdownDialog() {
+        if (getContext() == null) return;
+
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_sos_countdown, null);
+        AlertDialog sosDialog = new AlertDialog.Builder(getContext())
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        TextView textCountdown = dialogView.findViewById(R.id.textCountdown);
+        ProgressBar progressCountdown = dialogView.findViewById(R.id.progressCountdown);
+        Button btnCancelSos = dialogView.findViewById(R.id.btnCancelSos);
+
+        sosCountdownTimer = new CountDownTimer(10000, 1000) {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onTick(long millisUntilFinished) {
+                long secondsLeft = (millisUntilFinished / 1000) + 1;
+                textCountdown.setText(String.valueOf(secondsLeft));
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    progressCountdown.setProgress((int) secondsLeft, true);
+                } else {
+                    progressCountdown.setProgress((int) secondsLeft);
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                sosDialog.dismiss();
+                sendSosAlert();
+            }
+        };
+
+        btnCancelSos.setOnClickListener(v -> {
+            sosCountdownTimer.cancel();
+            sosDialog.dismiss();
+            Toast.makeText(getContext(), "SOS Canceled", Toast.LENGTH_SHORT).show();
+        });
+
+        sosCountdownTimer.start();
+        sosDialog.show();
+    }
+
+    // --- NEW: Method containing the original SOS logic ---
+    private void sendSosAlert() {
+        if (getContext() == null) return;
+
+        loadingSos.setVisibility(View.VISIBLE);
+        String userUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference ref = FirebaseDatabase.getInstance()
+                .getReference("Riders").child(userUid).child("liveTracking");
+
+        Map<String, Object> sosData = new HashMap<>();
+        sosData.put("sosAlert", true);
+        sosData.put("alert", "IMPACT");
+        String timeNow = getCurrentTime();
+        sosData.put("alertTime", timeNow);
+
+        String locationStr;
+        if (lastLocation != null) {
+            locationStr = lastLocation.getLatitude() + "," + lastLocation.getLongitude();
+        } else {
+            locationStr = "0,0";
+            Toast.makeText(getContext(), "Location unavailable. Using default coordinates.", Toast.LENGTH_SHORT).show();
+        }
+        sosData.put("location", locationStr);
+
+        ref.updateChildren(sosData).addOnCompleteListener(task -> {
+            loadingSos.setVisibility(View.GONE);
+            if (task.isSuccessful()) {
+                Toast.makeText(getContext(), "SOS sent to Firebase!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), "Failed to send SOS. Check connection.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Notify emergency contacts
+        notifyEmergencyContacts(userUid, timeNow, locationStr);
+    }
+
+    private void notifyEmergencyContacts(String userUid, String timeNow, String locationStr) {
+        DatabaseReference riderRef = FirebaseDatabase.getInstance().getReference("Riders").child(userUid);
+        riderRef.child("emergencyContacts").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot contactSnap : snapshot.getChildren()) {
+                    String familyUid = contactSnap.getKey();
+                    if (familyUid == null) continue;
+
+                    String alertId = FirebaseDatabase.getInstance().getReference("Alerts").child(familyUid).push().getKey();
+                    if (alertId == null) continue;
+
+                    DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userUid);
+                    userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot userSnap) {
+                            String riderName = userSnap.child("name").getValue(String.class);
+                            String profileImageUrl = userSnap.child("profileImageUrl").getValue(String.class);
+
+                            Alert alert = new Alert(
+                                    alertId, userUid, riderName, profileImageUrl,
+                                    "IMPACT", timeNow, locationStr, "NEW", false
+                            );
+
+                            FirebaseDatabase.getInstance().getReference("Alerts")
+                                    .child(familyUid).child(alertId).setValue(alert);
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            // Log error or handle
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Log error or handle
+            }
+        });
+    }
+
+
+    private void initializePermissionLaunchers() {
+        foregroundServicePermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                permissions -> {
+                    if (Boolean.TRUE.equals(permissions.get(Manifest.permission.ACCESS_FINE_LOCATION))) {
+                        startForegroundLocationService();
+                    } else {
+                        Toast.makeText(getContext(), "Foreground location permission required!", Toast.LENGTH_LONG).show();
+                    }
+                });
+
+        mapLocationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                permissions -> {
+                    if (Boolean.TRUE.equals(permissions.get(Manifest.permission.ACCESS_FINE_LOCATION))) {
+                        initializeMapWithLocation();
+                    } else {
+                        Toast.makeText(getContext(), "❗ Location permission denied", Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void checkAndRequestForegroundServicePermission() {
+        ArrayList<String> permissionsToRequest = new ArrayList<>();
+        permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+ for notifications
+            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14+
+            permissionsToRequest.add(Manifest.permission.FOREGROUND_SERVICE_LOCATION);
+        }
+
+
+        ArrayList<String> permissionsNotGranted = new ArrayList<>();
+        for (String permission : permissionsToRequest) {
+            if (ActivityCompat.checkSelfPermission(requireContext(), permission) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNotGranted.add(permission);
+            }
+        }
+
+        if (!permissionsNotGranted.isEmpty()) {
+            foregroundServicePermissionLauncher.launch(permissionsNotGranted.toArray(new String[0]));
+        } else {
+            startForegroundLocationService();
+        }
+    }
+
+
     private void startForegroundLocationService() {
         Intent serviceIntent = new Intent(requireContext(), LocationForegroundService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -334,7 +437,6 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    // === tripActive flag setter ===
     private void setTripActiveFlag(boolean active) {
         if (riderUid == null) return;
         DatabaseReference liveRef = FirebaseDatabase.getInstance()
@@ -382,35 +484,29 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
 
     private String routePointsToJson() {
         JSONArray arr = new JSONArray();
-        try {
-            for (LatLng latLng : routePoints) {
+        for (LatLng latLng : routePoints) {
+            try {
                 JSONArray point = new JSONArray();
                 point.put(latLng.latitude);
                 point.put(latLng.longitude);
                 arr.put(point);
+            } catch (JSONException e) {
+                // Should not happen
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "[]";
         }
         return arr.toString();
     }
 
     private String getCurrentTime() {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         return sdf.format(new java.util.Date());
     }
 
-    @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.map = googleMap;
         map.getUiSettings().setZoomControlsEnabled(false);
         map.getUiSettings().setMyLocationButtonEnabled(false);
-
-        if (fusedLocationClient == null) {
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
-        }
 
         LatLng malaysiaCenter = new LatLng(3.1390, 101.6869); // Kuala Lumpur
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(malaysiaCenter, 10f));
@@ -423,11 +519,20 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
         });
 
         if (hasLocationPermission()) {
-            map.setMyLocationEnabled(true);
-            startLocationUpdates();
+            initializeMapWithLocation();
         } else {
-            requestLocationPermission();
+            mapLocationPermissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private void initializeMapWithLocation() {
+        if (map == null || !hasLocationPermission()) return;
+        map.setMyLocationEnabled(true);
+        startLocationUpdates();
     }
 
     private boolean hasLocationPermission() {
@@ -435,49 +540,11 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
                 == PackageManager.PERMISSION_GRANTED;
     }
 
-    private void requestLocationPermission() {
-        requestPermissions(new String[]{
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-        }, LOCATION_PERMISSION_REQUEST_CODE);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_CODE_FOREGROUND_LOCATION) {
-            boolean granted = true;
-            for (int res : grantResults) {
-                granted = granted && (res == PackageManager.PERMISSION_GRANTED);
-            }
-            if (granted) {
-                startForegroundLocationService();
-            } else {
-                Toast.makeText(getContext(), "Foreground location permission required!", Toast.LENGTH_LONG).show();
-            }
-            return;
-        }
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            boolean granted = true;
-            for (int res : grantResults) {
-                granted = granted && (res == PackageManager.PERMISSION_GRANTED);
-            }
-            if (granted) {
-                if (map != null) onMapReady(map);
-            } else {
-                Toast.makeText(getContext(), "❗ Location permission denied", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
+    @SuppressLint("MissingPermission")
     private void startLocationUpdates() {
-        if (fusedLocationClient == null) {
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
-        }
-
-        LocationRequest request = LocationRequest.create();
-        request.setInterval(1000);
-        request.setFastestInterval(500);
-        request.setPriority(Priority.PRIORITY_HIGH_ACCURACY);
+        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                .setMinUpdateIntervalMillis(500)
+                .build();
 
         locationCallback = new LocationCallback() {
             @Override
@@ -488,15 +555,8 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
             }
         };
 
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
+        if (hasLocationPermission()) {
             fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
-        } else {
-            requestPermissions(
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
-                    LOCATION_PERMISSION_REQUEST_CODE
-            );
         }
     }
 
@@ -504,44 +564,34 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     private void updateTrip(Location location) {
         if (lastLocation != null) {
             float distance = lastLocation.distanceTo(location);
-            float accuracy = location.getAccuracy();
-
-            if (distance >= 5 && accuracy <= 10) {
+            if (distance > 2 && location.getAccuracy() < 20) {
                 totalDistanceKm += distance / 1000.0;
                 updateDistanceUI();
-                lastLocation = location;
                 LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
                 routePoints.add(point);
-                saveTripStateToPrefs();
                 drawRoute();
                 if (isFollowingPointer && map != null) {
                     map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
                 }
             }
+        } else {
+            LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
+            routePoints.add(point);
+            drawRoute();
+            if (isFollowingPointer && map != null) {
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
+            }
         }
-
         lastLocation = location;
-        LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
-        routePoints.add(point);
         saveTripStateToPrefs();
-        drawRoute();
-        if (isFollowingPointer && map != null) {
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 17f));
-        }
 
-        float speedMps = location.hasSpeed() ? location.getSpeed() : 0f;
-        float speedKph = speedMps * 3.6f;
-
-        if (speedKph < 1.0f) speedKph = 0.0f;
-
+        float speedKph = location.hasSpeed() ? location.getSpeed() * 3.6f : 0f;
         speedText.setText(String.format(Locale.getDefault(), "%.1f km/h", speedKph));
 
-        // PUSH REAL-TIME LOCATION TO FIREBASE FOR FAMILY MONITORING
         if (riderUid != null) {
             DatabaseReference liveLocRef = FirebaseDatabase.getInstance()
                     .getReference("Riders").child(riderUid).child("liveTracking");
-            String locStr = location.getLatitude() + "," + location.getLongitude();
-            liveLocRef.child("location").setValue(locStr);
+            liveLocRef.child("location").setValue(location.getLatitude() + "," + location.getLongitude());
             liveLocRef.child("lastUpdate").setValue(getCurrentTime());
             liveLocRef.child("speed").setValue(String.format(Locale.getDefault(), "%.1f km/h", speedKph));
         }
@@ -555,12 +605,11 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void drawRoute() {
-        if (routePoints.size() < 2) return;
-
+        if (map == null || routePoints.size() < 2) return;
         map.clear();
         map.addPolyline(new PolylineOptions()
                 .addAll(routePoints)
-                .width(10f)
+                .width(12f)
                 .color(requireContext().getColor(R.color.helmet_blue))
                 .geodesic(true));
     }
@@ -578,12 +627,33 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (helmetStatusText != null && getView() != null) {
+            ImageView helmetIcon = getView().findViewById(R.id.imgHelmetStatus);
+            boolean connected = HelmetConnectionManager.isConnected();
+            helmetStatusText.setText(connected ? "Helmet Connected" : "Helmet Not Connected");
+            if (helmetIcon != null) {
+                helmetIcon.setImageResource(connected ? R.drawable.ic_success_green : R.drawable.ic_error_red);
+            }
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (prefs.getBoolean("tripActive", false)) {
+            saveTripStateToPrefs();
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        setTripActiveFlag(false);
-
-        requireActivity().stopService(new Intent(requireContext(), LocationForegroundService.class));
-
+        // --- NEW: Cancel the timer to prevent memory leaks ---
+        if (sosCountdownTimer != null) {
+            sosCountdownTimer.cancel();
+        }
         if (getActivity() instanceof RiderHomeActivity) {
             ((RiderHomeActivity) getActivity()).setBottomNavVisibility(true);
         }
@@ -593,29 +663,12 @@ public class RiderTripFragment extends Fragment implements OnMapReadyCallback {
     public void onDestroy() {
         super.onDestroy();
         durationHandler.removeCallbacks(durationRunnable);
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-        requireActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
+        if (getActivity() != null) {
+            getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
-        }
-    }
-
-    @SuppressLint({"SetTextI18n", "NewApi"})
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        if (helmetStatusText != null && getView() != null) {
-            ImageView helmetIcon = getView().findViewById(R.id.imgHelmetStatus);
-            boolean connected = HelmetConnectionManager.isConnected();
-
-            helmetStatusText.setText(connected ? "Helmet Connected" : "Helmet Not Connected");
-
-            if (helmetIcon != null) {
-                helmetIcon.setImageResource(connected ? R.drawable.ic_success_green : R.drawable.ic_error_red);
-                helmetIcon.setTooltipText(connected ? "Helmet is connected via Bluetooth" : "Helmet not connected. Please check Bluetooth");
-            }
         }
     }
 }
