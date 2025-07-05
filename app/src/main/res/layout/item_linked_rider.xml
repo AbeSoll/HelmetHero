@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
     android:background="@drawable/rounded_white_box"
     android:padding="14dp"
@@ -47,6 +48,17 @@
             android:textColor="#666666"
             android:layout_marginTop="2dp" />
     </LinearLayout>
+
+    <!-- ✅ NEW: Call Button -->
+    <ImageButton
+        android:id="@+id/btnCallRider"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/call_24dp_e3e3e3"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Call Rider"
+        app:tint="@color/helmet_blue"
+        android:layout_marginStart="8dp"/>
 
     <!-- Multi-Select Checkbox -->
     <CheckBox

@@ -1,12 +1,17 @@
 package com.example.helmethero.adapters;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -41,7 +46,6 @@ public class LinkedRiderAdapter extends RecyclerView.Adapter<LinkedRiderAdapter.
         this.selectionChangeListener = selectionChangeListener;
     }
 
-    // ✅ Setter to be called externally
     public void setOnRiderItemClickListener(OnRiderClickListener listener) {
         this.riderClickListener = listener;
     }
@@ -54,13 +58,21 @@ public class LinkedRiderAdapter extends RecyclerView.Adapter<LinkedRiderAdapter.
         return new ViewHolder(v);
     }
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint({"SetTextI18n", "NotifyDataSetChanged"})
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         User rider = riderList.get(position);
 
         holder.name.setText(rider.getName());
-        holder.phone.setText("Phone: " + (rider.getPhone() == null ? "-" : rider.getPhone()));
+
+        // ✅ UPDATED: Handle phone number and call button visibility
+        if (rider.getPhone() != null && !rider.getPhone().trim().isEmpty()) {
+            holder.phone.setText("Phone: " + rider.getPhone());
+            holder.btnCallRider.setVisibility(View.VISIBLE);
+        } else {
+            holder.phone.setText("Phone: Not available");
+            holder.btnCallRider.setVisibility(View.GONE);
+        }
 
         if (rider.getProfileImageUrl() != null && !rider.getProfileImageUrl().isEmpty()) {
             Glide.with(holder.itemView.getContext())
@@ -76,13 +88,39 @@ public class LinkedRiderAdapter extends RecyclerView.Adapter<LinkedRiderAdapter.
         boolean inSelectionMode = !selectedRiderUids.isEmpty();
         boolean isSelected = selectedRiderUids.contains(rider.getUid());
 
-        // Show checkbox only in selection mode, otherwise hide all
-        holder.checkBox.setVisibility(inSelectionMode ? View.VISIBLE : View.GONE);
+        // Show checkbox and hide call button when in selection mode
+        if (inSelectionMode) {
+            holder.checkBox.setVisibility(View.VISIBLE);
+            holder.btnCallRider.setVisibility(View.GONE); // Hide call button during selection
+        } else {
+            holder.checkBox.setVisibility(View.GONE);
+            // Re-evaluate call button visibility based on phone number
+            if (rider.getPhone() != null && !rider.getPhone().trim().isEmpty()) {
+                holder.btnCallRider.setVisibility(View.VISIBLE);
+            } else {
+                holder.btnCallRider.setVisibility(View.GONE);
+            }
+        }
         holder.checkBox.setChecked(isSelected);
+
+        // ✅ NEW: Set OnClickListener for the call button
+        holder.btnCallRider.setOnClickListener(v -> {
+            String phoneNumber = rider.getPhone();
+            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+                Intent dialIntent = new Intent(Intent.ACTION_DIAL);
+                dialIntent.setData(Uri.parse("tel:" + phoneNumber));
+
+                Context context = holder.itemView.getContext();
+                if (dialIntent.resolveActivity(context.getPackageManager()) != null) {
+                    context.startActivity(dialIntent);
+                } else {
+                    Toast.makeText(context, "No application can handle this action.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
         holder.itemView.setOnLongClickListener(v -> {
             if (!inSelectionMode) {
-                // Start selection mode
                 selectedRiderUids.add(rider.getUid());
                 notifyDataSetChanged();
                 if (selectionChangeListener != null) selectionChangeListener.onSelectionChanged();
@@ -92,7 +130,6 @@ public class LinkedRiderAdapter extends RecyclerView.Adapter<LinkedRiderAdapter.
 
         holder.itemView.setOnClickListener(v -> {
             if (!selectedRiderUids.isEmpty()) {
-                // Toggle selection for this item
                 if (isSelected) {
                     selectedRiderUids.remove(rider.getUid());
                 } else {
@@ -103,11 +140,6 @@ public class LinkedRiderAdapter extends RecyclerView.Adapter<LinkedRiderAdapter.
             } else if (riderClickListener != null) {
                 riderClickListener.onRiderClicked(rider);
             }
-        });
-
-        // Prevent user from directly interacting with the checkbox (only through item click)
-        holder.checkBox.setOnClickListener(v -> {
-            // do nothing (optional: to disable direct checkbox click)
         });
     }
 
@@ -120,6 +152,7 @@ public class LinkedRiderAdapter extends RecyclerView.Adapter<LinkedRiderAdapter.
         ImageView imgProfile;
         TextView name, phone;
         CheckBox checkBox;
+        ImageButton btnCallRider; // ✅ NEW
 
         ViewHolder(View v) {
             super(v);
@@ -127,6 +160,7 @@ public class LinkedRiderAdapter extends RecyclerView.Adapter<LinkedRiderAdapter.
             name = v.findViewById(R.id.textRiderName);
             phone = v.findViewById(R.id.textRiderPhone);
             checkBox = v.findViewById(R.id.checkboxSelect);
+            btnCallRider = v.findViewById(R.id.btnCallRider); // ✅ NEW
         }
     }
 }
